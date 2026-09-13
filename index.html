@@ -98,9 +98,9 @@
       </span>
 
       <!-- Owner Account Pill -->
-      <div className="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium flex items-center gap-1.5">
-        <span class="text-amber-400 font-bold">👑</span>
-        <span>salamabdulsalam8111@gmail.com</span>
+      <div class="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium flex items-center gap-1.5">
+        <span>SalamEfx</span>
+        <span class="text-[#a39b8c] text-[11px] font-mono">({OWNER_EMAIL})</span>
         <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold">OWNER</span>
       </div>
 
@@ -396,7 +396,7 @@
     };
 
     const DEFAULT_TEAM = [
-      { id: 'team-1', name: 'Salam (Owner)', email: OWNER_EMAIL, role: 'Owner Admin', isOwner: true },
+      { id: 'team-1', name: 'SalamEfx', email: OWNER_EMAIL, role: 'Owner Admin', isOwner: true },
       { id: 'team-2', name: 'Shamir', email: 'shamir@eventteam.org', role: 'Admin', isOwner: false },
       { id: 'team-3', name: 'Alex Johnson', email: 'alex@eventteam.org', role: 'Coordinator', isOwner: false }
     ];
@@ -405,6 +405,9 @@
     let students = JSON.parse(localStorage.getItem('dt_students')) || DEFAULT_STUDENTS;
     let distributions = JSON.parse(localStorage.getItem('dt_distributions')) || DEFAULT_DISTRIBUTIONS;
     let teamMembers = JSON.parse(localStorage.getItem('dt_team')) || DEFAULT_TEAM;
+
+    // Ensure owner name is updated to SalamEfx
+    teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: 'SalamEfx' } : m);
 
     function saveData() {
       localStorage.setItem('dt_items', JSON.stringify(items));
@@ -599,7 +602,6 @@
               <div>
                 <div class="text-xs font-bold text-[#f3eee3] flex items-center gap-2">
                   <span>${m.name}</span>
-                  ${isOwner ? '<span class="text-amber-400">👑</span>' : ''}
                 </div>
                 <div class="text-[11px] text-[#a39b8c] font-mono">${m.email}</div>
               </div>
