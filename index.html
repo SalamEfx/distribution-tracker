@@ -414,9 +414,15 @@
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: OWNER_NAME } : m);
 
-    const SYNC_ENDPOINTS = [
-      "/api/db",
-      "https://api.npoint.io/46d9e11508ab0238e874"
+    const CLOUD_ENDPOINTS = [
+      {
+        url: "https://getpantry.cloud/apiv1/pantry/a89f949c-3d2b-4e6a-9f1c-8b7a6c5d4e3f/basket/salamefx_distribution",
+        method: "POST"
+      },
+      {
+        url: "/api/db",
+        method: "POST"
+      }
     ];
     let lastCloudTimestamp = 0;
     let syncTimeout = null;
@@ -447,10 +453,10 @@
 
       let savedGlobally = false;
 
-      for (const endpoint of SYNC_ENDPOINTS) {
+      for (const ep of CLOUD_ENDPOINTS) {
         try {
-          const res = await fetch(endpoint, {
-            method: 'POST',
+          const res = await fetch(ep.url, {
+            method: ep.method,
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
@@ -478,15 +484,13 @@
 
         let data = null;
 
-        for (const endpoint of SYNC_ENDPOINTS) {
+        for (const ep of CLOUD_ENDPOINTS) {
           try {
-            const res = await fetch(endpoint);
+            const res = await fetch(ep.url);
             if (res.ok) {
               const json = await res.json();
-              if (json && (json.items || json.record?.items)) {
-                data = json.record || json;
-                break;
-              }
+              data = json.record || json;
+              if (data && data.items && data.students) break;
             }
           } catch (e) {
             // Fallback to next endpoint
