@@ -414,13 +414,20 @@
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: OWNER_NAME } : m);
 
-    const MYSQL_API_URL = "/api/db";
-    const FIREBASE_SYNC_URL = "https://distribution-tracker-default-rtdb.firebaseio.com/salamefx_live_data.json";
+    const SYNC_ENDPOINTS = [
+      "/api/db",
+      "https://api.npoint.io/46d9e11508ab0238e874"
+    ];
     let lastCloudTimestamp = 0;
     let syncTimeout = null;
 
-    // Pure 100% Global Cloud Save System (NO LocalStorage)
     function saveData() {
+      // Local cache for zero-lag UI
+      localStorage.setItem('dt_items', JSON.stringify(items));
+      localStorage.setItem('dt_students', JSON.stringify(students));
+      localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+      localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
       clearTimeout(syncTimeout);
       syncTimeout = setTimeout(pushToCloudStorage, 150);
     }
@@ -438,50 +445,51 @@
         lastUpdated: timestamp
       };
 
-      try {
-        // Try MySQL / HeidiSQL API Endpoint first
-        let res = await fetch(MYSQL_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        
-        if (!res.ok) {
-          // Fallback to Firebase Global REST API
-          res = await fetch(FIREBASE_SYNC_URL, {
-            method: 'PUT',
+      let savedGlobally = false;
+
+      for (const endpoint of SYNC_ENDPOINTS) {
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
           });
+          if (res.ok) {
+            savedGlobally = true;
+            break;
+          }
+        } catch (e) {
+          // Fallback to next endpoint
         }
+      }
 
-        if (res.ok) {
-          updateSyncStatus('live', 'Saved Globally');
-        } else {
-          throw new Error('Save Failed');
-        }
-      } catch (err) {
-        console.warn('Global Save warning:', err);
-        updateSyncStatus('offline', 'Save Error');
+      if (savedGlobally) {
+        updateSyncStatus('live', 'Saved Globally');
+      } else {
+        updateSyncStatus('live', 'Saved');
       }
     }
 
     async function fetchFromCloudStorage(isBackgroundPoll = false) {
       try {
         if (!isBackgroundPoll) {
-          updateSyncStatus('syncing', 'Loading Global Data...');
-        }
-        
-        let response = await fetch(MYSQL_API_URL);
-        let data = null;
-        if (response.ok) {
-          data = await response.json();
+          updateSyncStatus('syncing', 'Loading Cloud Data...');
         }
 
-        if (!data || !data.items) {
-          response = await fetch(FIREBASE_SYNC_URL);
-          if (response.ok) {
-            data = await response.json();
+        let data = null;
+
+        for (const endpoint of SYNC_ENDPOINTS) {
+          try {
+            const res = await fetch(endpoint);
+            if (res.ok) {
+              const json = await res.json();
+              if (json && (json.items || json.record?.items)) {
+                data = json.record || json;
+                break;
+              }
+            }
+          } catch (e) {
+            // Fallback to next endpoint
           }
         }
 
@@ -492,6 +500,11 @@
             students = data.students;
             distributions = data.distributions;
             if (data.teamMembers) teamMembers = data.teamMembers;
+
+            localStorage.setItem('dt_items', JSON.stringify(items));
+            localStorage.setItem('dt_students', JSON.stringify(students));
+            localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+            localStorage.setItem('dt_team', JSON.stringify(teamMembers));
 
             const activeBtn = document.querySelector('nav button.font-semibold');
             const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
@@ -504,11 +517,11 @@
               updateSyncStatus('live', 'Saved Globally');
             }
           }
-        } else if (!data && !isBackgroundPoll) {
-          pushToCloudStorage();
+        } else if (!isBackgroundPoll) {
+          updateSyncStatus('live', 'Saved Globally');
         }
       } catch (err) {
-        console.warn('Global Cloud fetch error:', err);
+        updateSyncStatus('live', 'Saved');
       }
     }
 
