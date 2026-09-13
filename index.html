@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distribution Tracker</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['Georgia', 'Cambria', '"Times New Roman"', 'Times', 'serif'],
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif']
+          },
+          colors: {
+            bgDark: '#161512',
+            cardDark: '#23201b',
+            borderDark: '#343029',
+            accentCream: '#f3eee3',
+            mutedText: '#a39b8c'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      background-color: #161512;
+      color: #f3eee3;
+      font-family: 'Inter', sans-serif;
+    }
+    .serif-title {
+      font-family: 'Playfair Display', Georgia, serif;
+    }
+    .custom-card {
+      background-color: #23201c;
+      border: 1px solid #343029;
+      border-radius: 1rem;
+    }
+    .custom-input {
+      background-color: #1b1815;
+      border: 1px solid #3c372f;
+      color: #f3eee3;
+    }
+    .custom-input:focus {
+      outline: none;
+      border-color: #786e5e;
+    }
+    /* Matrix Circular Toggle Button Styling */
+    .circle-toggle {
+      width: 2rem;
+      height: 2rem;
+      border-radius: 9999px;
+      border: 2px solid #3e382f;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      background-color: #1b1815;
+    }
+    .circle-toggle:hover {
+      border-color: #6b6152;
+      transform: scale(1.05);
+    }
+    .circle-toggle.checked {
+      border-color: transparent;
+      box-shadow: 0 0 12px rgba(0,0,0,0.4);
+    }
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #161512; }
+    ::-webkit-scrollbar-thumb { background: #343029; border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- TOP APP HEADER -->
+  <header class="border-b border-[#2d2923] px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3">
+      <span class="text-xl">📋</span>
+      <h1 class="text-xl font-bold serif-title text-[#f3eee3] tracking-wide">Distribution Tracker</h1>
+    </div>
+
+    <!-- Right Header Controls -->
+    <div class="flex items-center gap-3 text-xs">
+      <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e271d] border border-[#2d422a] text-[#86efac] font-medium">
+        <span class="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse"></span>
+        Live
+      </span>
+
+      <div class="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium">
+        testforfun2787 • Admin
+      </div>
+
+      <button onclick="alert('Signed out successfully.')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] border border-[#3b352e] text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+        Sign out
+      </button>
+    </div>
+  </header>
+
+  <!-- NAVIGATION TABS -->
+  <nav class="border-b border-[#2d2923] px-6 flex gap-8 text-sm font-medium">
+    <button onclick="switchTab('distribute')" id="tab-distribute" class="py-3 text-[#86efac] border-b-2 border-[#86efac] font-semibold transition-colors">
+      Distribute
+    </button>
+    <button onclick="switchTab('overview')" id="tab-overview" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+      Overview
+    </button>
+    <button onclick="switchTab('manage')" id="tab-manage" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+      Manage
+    </button>
+    <button onclick="switchTab('team')" id="tab-team" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+      Team
+    </button>
+  </nav>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-6 sm:p-8">
+    
+    <!-- Toast Alert Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#f3eee3] text-[#161512] px-4 py-2 rounded-lg font-medium text-xs shadow-2xl transition-all opacity-0 pointer-events-none transform translate-y-2">
+      Notification text
+    </div>
+
+    <!-- SECTION 1: DISTRIBUTE MATRIX TAB -->
+    <section id="sec-distribute" class="space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold serif-title text-[#f3eee3]">Distribute</h2>
+          <p class="text-xs text-[#a39b8c] mt-1">Tap a circle the moment someone receives an item.</p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input 
+            type="text" 
+            id="studentSearch" 
+            oninput="renderDistributeTable()" 
+            placeholder="Find a student..." 
+            class="px-3.5 py-1.5 rounded-xl custom-input text-xs w-48 sm:w-64"
+          />
+          <button onclick="exportCSV()" class="px-4 py-1.5 rounded-xl bg-[#27231e] hover:bg-[#342e28] border border-[#3b352e] text-xs font-semibold text-[#f3eee3] transition-colors">
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Matrix Table Card -->
+      <div class="custom-card overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr class="border-b border-[#343029] text-[#a39b8c] font-medium bg-[#1e1c18]">
+                <th class="p-4 uppercase tracking-wider font-semibold w-48">Student</th>
+                <!-- Item headers rendered dynamically via JS -->
+                <tbody id="matrixHeaderRow" class="contents"></tbody>
+                <th class="p-4 text-center uppercase tracking-wider font-semibold w-24">Total</th>
+              </tr>
+            </thead>
+            <tbody id="matrixTableBody" class="divide-y divide-[#2d2923]">
+              <!-- Matrix rows rendered via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: OVERVIEW TAB -->
+    <section id="sec-overview" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-2xl font-bold serif-title text-[#f3eee3]">Distribution Overview</h2>
+        <p class="text-xs text-[#a39b8c] mt-1">Summary statistics and completion rates across all students and items.</p>
+      </div>
+
+      <!-- Stats Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="custom-card p-4 space-y-1">
+          <div class="text-xs text-[#a39b8c]">Total Students</div>
+          <div id="statTotalStudents" class="text-2xl font-bold text-[#f3eee3]">0</div>
+        </div>
+        <div class="custom-card p-4 space-y-1">
+          <div class="text-xs text-[#a39b8c]">Item Types</div>
+          <div id="statTotalItems" class="text-2xl font-bold text-[#86efac]">0</div>
+        </div>
+        <div class="custom-card p-4 space-y-1">
+          <div class="text-xs text-[#a39b8c]">Total Given Count</div>
+          <div id="statGivenTotal" class="text-2xl font-bold text-[#93c5fd]">0</div>
+        </div>
+        <div class="custom-card p-4 space-y-1">
+          <div class="text-xs text-[#a39b8c]">Completion Rate</div>
+          <div id="statCompletionPct" class="text-2xl font-bold text-[#f472b6]">0%</div>
+        </div>
+      </div>
+
+      <!-- Item Breakdown Progress Bars -->
+      <div class="custom-card p-6 space-y-4">
+        <h3 class="text-sm font-bold serif-title text-[#f3eee3]">Items Distribution Progress</h3>
+        <div id="itemProgressList" class="space-y-4">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: MANAGE TAB -->
+    <section id="sec-manage" class="space-y-6 hidden">
+      <div>
+        <h2 class="text-2xl font-bold serif-title text-[#f3eee3]">Manage</h2>
+        <p class="text-xs text-[#a39b8c] mt-1">Students and items. Admins only.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        
+        <!-- Students Box -->
+        <div class="custom-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[#f3eee3]">Students</h3>
+            <div class="flex items-center gap-2">
+              <button onclick="openPasteModal()" class="px-3 py-1.5 rounded-lg bg-[#2b2620] hover:bg-[#38322a] border border-[#3e372e] text-xs font-medium text-[#f3eee3]">
+                Paste list
+              </button>
+              <button onclick="openAddStudentModal()" class="px-3 py-1.5 rounded-lg bg-[#274026] hover:bg-[#315230] border border-[#3c633a] text-xs font-semibold text-[#86efac]">
+                Add student
+              </button>
+            </div>
+          </div>
+
+          <div id="manageStudentsList" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+        <!-- Items Box -->
+        <div class="custom-card p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-bold text-[#f3eee3]">Items</h3>
+            <button onclick="openAddItemModal()" class="px-3 py-1.5 rounded-lg bg-[#274026] hover:bg-[#315230] border border-[#3c633a] text-xs font-semibold text-[#86efac]">
+              Add item
+            </button>
+          </div>
+
+          <div id="manageItemsList" class="space-y-2 max-h-96 overflow-y-auto pr-1">
+            <!-- Rendered via JS -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 4: TEAM TAB -->
+    <section id="sec-team" class="space-y-6 hidden max-w-2xl">
+      <div>
+        <h2 class="text-2xl font-bold serif-title text-[#f3eee3]">Team & Staff Members</h2>
+        <p class="text-xs text-[#a39b8c] mt-1">Manage admin permissions for distribution coordinators.</p>
+      </div>
+
+      <div class="custom-card p-5 space-y-3">
+        <div class="flex items-center justify-between p-3 bg-[#1b1815] rounded-xl border border-[#343029]">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#3b82f6]/20 text-[#60a5fa] font-bold text-xs flex items-center justify-center">
+              TF
+            </div>
+            <div>
+              <div class="text-xs font-bold text-[#f3eee3]">testforfun2787</div>
+              <div class="text-[10px] text-[#a39b8c]">testforfun2787@gmail.com</div>
+            </div>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-[#86efac]/10 text-[#86efac] font-semibold border border-[#86efac]/20">Owner Admin</span>
+        </div>
+
+        <div class="flex items-center justify-between p-3 bg-[#1b1815] rounded-xl border border-[#343029]">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-[#ec4899]/20 text-[#f472b6] font-bold text-xs flex items-center justify-center">
+              SA
+            </div>
+            <div>
+              <div class="text-xs font-bold text-[#f3eee3]">salam</div>
+              <div class="text-[10px] text-[#a39b8c]">salam@eventteam.org</div>
+            </div>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-[#93c5fd]/10 text-[#93c5fd] font-semibold border border-[#93c5fd]/20">Coordinator</span>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL: ADD STUDENT -->
+  <div id="modalAddStudent" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+    <div class="custom-card w-full max-w-sm p-6 space-y-4">
+      <h3 class="text-base font-bold serif-title text-[#f3eee3]">Add New Student</h3>
+      <form onsubmit="handleAddStudent(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="text-[#a39b8c] font-medium">Student Name *</label>
+          <input type="text" id="inputStudentName" required placeholder="e.g. Alex Rivera" class="w-full p-2.5 rounded-xl custom-input mt-1" />
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modalAddStudent')" class="px-3 py-1.5 rounded-lg bg-[#27231e] text-[#a39b8c]">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-[#274026] text-[#86efac] font-semibold">Save Student</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BULK PASTE STUDENTS -->
+  <div id="modalPasteStudents" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+    <div class="custom-card w-full max-w-md p-6 space-y-4">
+      <h3 class="text-base font-bold serif-title text-[#f3eee3]">Paste Student List</h3>
+      <p class="text-xs text-[#a39b8c]">Paste student names below (one name per line):</p>
+      <form onsubmit="handlePasteStudents(event)" class="space-y-3 text-xs">
+        <textarea id="inputPasteText" rows="6" required placeholder="John Doe&#10;Jane Smith&#10;Sam Wilson" class="w-full p-3 rounded-xl custom-input font-mono"></textarea>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modalPasteStudents')" class="px-3 py-1.5 rounded-lg bg-[#27231e] text-[#a39b8c]">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-[#274026] text-[#86efac] font-semibold">Import List</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADD ITEM -->
+  <div id="modalAddItem" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+    <div class="custom-card w-full max-w-sm p-6 space-y-4">
+      <h3 class="text-base font-bold serif-title text-[#f3eee3]">Add New Item</h3>
+      <form onsubmit="handleAddItem(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="text-[#a39b8c] font-medium">Item Name *</label>
+          <input type="text" id="inputItemName" required placeholder="e.g. ticket, badge, laptop" class="w-full p-2.5 rounded-xl custom-input mt-1" />
+        </div>
+        <div>
+          <label class="text-[#a39b8c] font-medium">Item Color Tag</label>
+          <select id="inputItemColor" class="w-full p-2.5 rounded-xl custom-input mt-1">
+            <option value="#8b5cf6">Purple</option>
+            <option value="#ef4444">Red</option>
+            <option value="#3b82f6">Blue</option>
+            <option value="#10b981">Green</option>
+            <option value="#f59e0b">Yellow</option>
+            <option value="#ec4899">Pink</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modalAddItem')" class="px-3 py-1.5 rounded-lg bg-[#27231e] text-[#a39b8c]">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-[#274026] text-[#86efac] font-semibold">Save Item</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APP LOGIC -->
+  <script>
+    // Initial Seed Datasets matching user screenshots
+    const DEFAULT_ITEMS = [
+      { id: 'item-1', name: 'sim', color: '#8b5cf6' },
+      { id: 'item-2', name: 'nbn', color: '#ef4444' },
+      { id: 'item-3', name: 'Chair', color: '#8b5cf6' },
+      { id: 'item-4', name: 'visa', color: '#3b82f6' },
+      { id: 'item-5', name: 'ticket', color: '#10b981' },
+      { id: 'item-6', name: 'present', color: '#f59e0b' }
+    ];
+
+    const DEFAULT_STUDENTS = [
+      { id: 'std-1', name: 'Hhd' },
+      { id: 'std-2', name: 'salam' },
+      { id: 'std-3', name: 'shamir' }
+    ];
+
+    // Initial Distribution Matrix: stdId_itemId -> true/false
+    const DEFAULT_DISTRIBUTIONS = {
+      'std-1_item-2': true, // Hhd received nbn
+      'std-2_item-4': true  // salam received visa
+    };
+
+    // State Variables
+    let items = JSON.parse(localStorage.getItem('dt_items')) || DEFAULT_ITEMS;
+    let students = JSON.parse(localStorage.getItem('dt_students')) || DEFAULT_STUDENTS;
+    let distributions = JSON.parse(localStorage.getItem('dt_distributions')) || DEFAULT_DISTRIBUTIONS;
+
+    function saveData() {
+      localStorage.setItem('dt_items', JSON.stringify(items));
+      localStorage.setItem('dt_students', JSON.stringify(students));
+      localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.classList.remove('opacity-0', 'translate-y-2', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2', 'pointer-events-none');
+      }, 3000);
+    }
+
+    // Tab Switcher
+    function switchTab(tabName) {
+      document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('nav button').forEach(btn => {
+        btn.className = 'py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors';
+      });
+
+      document.getElementById(`sec-${tabName}`).classList.remove('hidden');
+      const activeBtn = document.getElementById(`tab-${tabName}`);
+      if (activeBtn) {
+        activeBtn.className = 'py-3 text-[#86efac] border-b-2 border-[#86efac] font-semibold transition-colors';
+      }
+
+      if (tabName === 'distribute') renderDistributeTable();
+      if (tabName === 'overview') renderOverview();
+      if (tabName === 'manage') renderManageLists();
+    }
+
+    // Render Matrix Distribute Table
+    function renderDistributeTable() {
+      const headerContainer = document.getElementById('matrixHeaderRow');
+      const tbody = document.getElementById('matrixTableBody');
+      const searchVal = document.getElementById('studentSearch')?.value.toLowerCase() || '';
+
+      // 1. Render Table Header Items
+      headerContainer.innerHTML = items.map(item => {
+        // Calculate total count given for this item
+        const countGiven = students.filter(s => distributions[`${s.id}_${item.id}`]).length;
+        return `
+          <th class="p-3 text-center border-l border-[#2d2923] font-mono">
+            <div class="flex items-center justify-center gap-1.5">
+              <span class="w-2 h-2 rounded-full" style="background-color: ${item.color}"></span>
+              <span class="text-[#f3eee3] font-bold text-xs">${item.name}</span>
+            </div>
+            <div class="text-[10px] text-[#a39b8c] font-mono font-normal mt-0.5">${countGiven} / ${students.length}</div>
+          </th>
+        `;
+      }).join('');
+
+      // 2. Render Table Student Rows
+      const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchVal));
+
+      if (filteredStudents.length === 0) {
+        tbody.innerHTML = `<tr><td colSpan="${items.length + 2}" class="p-8 text-center text-[#a39b8c]">No students found.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filteredStudents.map((student, sIdx) => {
+        let studentTotal = 0;
+
+        const itemCells = items.map(item => {
+          const key = `${student.id}_${item.id}`;
+          const isChecked = !!distributions[key];
+          if (isChecked) studentTotal++;
+
+          return `
+            <td class="p-3 text-center border-l border-[#2d2923]">
+              <button 
+                onclick="toggleCheck('${student.id}', '${item.id}')"
+                class="circle-toggle ${isChecked ? 'checked' : ''}"
+                style="${isChecked ? `background-color: ${item.color}; border-color: ${item.color}` : ''}"
+              >
+                ${isChecked ? `<svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>` : ''}
+              </button>
+            </td>
+          `;
+        }).join('');
+
+        return `
+          <tr class="hover:bg-[#1b1915] transition-colors">
+            <td class="p-4 font-semibold text-[#f3eee3] flex items-center gap-2">
+              <span class="text-[10px] text-[#a39b8c] font-mono">${sIdx + 1}</span>
+              <span>${student.name}</span>
+            </td>
+            ${itemCells}
+            <td class="p-4 text-center border-l border-[#2d2923] font-mono font-bold text-[#d6cebf]">
+              ${studentTotal} / ${items.length}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // Toggle Checklist Checkmark
+    function toggleCheck(studentId, itemId) {
+      const key = `${studentId}_${itemId}`;
+      distributions[key] = !distributions[key];
+      saveData();
+      renderDistributeTable();
+    }
+
+    // Render Overview Statistics Tab
+    function renderOverview() {
+      document.getElementById('statTotalStudents').innerText = students.length;
+      document.getElementById('statTotalItems').innerText = items.length;
+
+      let totalGiven = 0;
+      Object.values(distributions).forEach(v => { if (v) totalGiven++; });
+      const maxPossible = students.length * items.length;
+      const pct = maxPossible > 0 ? Math.round((totalGiven / maxPossible) * 100) : 0;
+
+      document.getElementById('statGivenTotal').innerText = totalGiven;
+      document.getElementById('statCompletionPct').innerText = `${pct}%`;
+
+      const listEl = document.getElementById('itemProgressList');
+      listEl.innerHTML = items.map(item => {
+        const given = students.filter(s => distributions[`${s.id}_${item.id}`]).length;
+        const itemPct = students.length > 0 ? Math.round((given / students.length) * 100) : 0;
+
+        return `
+          <div class="space-y-1.5">
+            <div class="flex justify-between text-xs">
+              <span class="font-bold flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${item.color}"></span>
+                ${item.name}
+              </span>
+              <span class="font-mono text-[#a39b8c]">${given} / ${students.length} given (${itemPct}%)</span>
+            </div>
+            <div class="w-full bg-[#1b1815] h-2 rounded-full overflow-hidden border border-[#343029]">
+              <div class="h-full transition-all duration-500" style="width: ${itemPct}%; background-color: ${item.color}"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Render Manage Lists (Matching Screenshot 2)
+    function renderManageLists() {
+      // Students List
+      const stdListEl = document.getElementById('manageStudentsList');
+      stdListEl.innerHTML = students.map(s => {
+        const countReceived = items.filter(i => distributions[`${s.id}_${i.id}`]).length;
+        return `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-[#1b1815] border border-[#343029]">
+            <div>
+              <span class="font-bold text-[#f3eee3] text-xs">${s.name}</span>
+              <span class="text-[11px] font-mono text-[#a39b8c] ml-2">${countReceived} / ${items.length}</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="deleteStudent('${s.id}')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] text-xs text-[#f3eee3] font-medium border border-[#3b352e]">
+                Edit
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Items List
+      const itemListEl = document.getElementById('manageItemsList');
+      itemListEl.innerHTML = items.map(i => {
+        const countGiven = students.filter(s => distributions[`${s.id}_${i.id}`]).length;
+        return `
+          <div class="flex items-center justify-between p-3 rounded-xl bg-[#1b1815] border border-[#343029]">
+            <div class="flex items-center gap-2">
+              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${i.color}"></span>
+              <span class="font-bold text-[#f3eee3] text-xs">${i.name}</span>
+              <span class="text-[11px] font-mono text-[#a39b8c]">${countGiven} / ${students.length} given</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="deleteItem('${i.id}')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] text-xs text-[#f3eee3] font-medium border border-[#3b352e]">
+                Edit
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Add Student Action
+    function openAddStudentModal() { document.getElementById('modalAddStudent').classList.remove('hidden'); }
+    function openPasteModal() { document.getElementById('modalPasteStudents').classList.remove('hidden'); }
+    function openAddItemModal() { document.getElementById('modalAddItem').classList.remove('hidden'); }
+    function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+    function handleAddStudent(e) {
+      e.preventDefault();
+      const name = document.getElementById('inputStudentName').value.trim();
+      if (!name) return;
+
+      students.push({ id: `std-${Date.now()}`, name });
+      saveData();
+      closeModal('modalAddStudent');
+      document.getElementById('inputStudentName').value = '';
+      showToast("Student added.");
+      renderManageLists();
+    }
+
+    function handlePasteStudents(e) {
+      e.preventDefault();
+      const text = document.getElementById('inputPasteText').value;
+      const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+      lines.forEach(name => {
+        students.push({ id: `std-${Math.random().toString(36).substr(2, 9)}`, name });
+      });
+
+      saveData();
+      closeModal('modalPasteStudents');
+      document.getElementById('inputPasteText').value = '';
+      showToast(`${lines.length} students imported.`);
+      renderManageLists();
+    }
+
+    function handleAddItem(e) {
+      e.preventDefault();
+      const name = document.getElementById('inputItemName').value.trim();
+      const color = document.getElementById('inputItemColor').value;
+      if (!name) return;
+
+      items.push({ id: `item-${Date.now()}`, name, color });
+      saveData();
+      closeModal('modalAddItem');
+      document.getElementById('inputItemName').value = '';
+      showToast("Item added.");
+      renderManageLists();
+    }
+
+    function deleteStudent(id) {
+      if (confirm("Delete student from list?")) {
+        students = students.filter(s => s.id !== id);
+        saveData();
+        renderManageLists();
+      }
+    }
+
+    function deleteItem(id) {
+      if (confirm("Delete item from list?")) {
+        items = items.filter(i => i.id !== id);
+        saveData();
+        renderManageLists();
+      }
+    }
+
+    // Export CSV Helper
+    function exportCSV() {
+      let csv = 'Student,' + items.map(i => i.name).join(',') + ',Total\n';
+      students.forEach(s => {
+        let total = 0;
+        const row = items.map(i => {
+          const checked = !!distributions[`${s.id}_${i.id}`];
+          if (checked) total++;
+          return checked ? 'YES' : 'NO';
+        }).join(',');
+        csv += `"${s.name}",${row},${total}/${items.length}\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.setAttribute('href', url);
+      a.setAttribute('download', 'student_distributions.csv');
+      a.click();
+    }
+
+    // Initialize App
+    document.addEventListener('DOMContentLoaded', () => {
+      switchTab('distribute');
+    });
+  </script>
+</body>
+</html>
