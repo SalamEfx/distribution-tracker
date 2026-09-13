@@ -88,9 +88,9 @@
 
     <!-- Right Header Controls -->
     <div class="flex items-center gap-3 text-xs">
-      <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e271d] border border-[#2d422a] text-[#86efac] font-medium">
-        <span class="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse"></span>
-        Live
+      <span id="cloudSyncBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e271d] border border-[#2d422a] text-[#86efac] font-medium">
+        <span id="cloudSyncDot" class="w-2 h-2 rounded-full bg-[#4ade80] animate-pulse"></span>
+        <span id="cloudSyncLabel">Global Cloud Sync</span>
       </span>
 
       <!-- Owner Account Pill -->
@@ -414,11 +414,101 @@
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: OWNER_NAME } : m);
 
-    function saveData() {
+    const CLOUD_SYNC_URL = "https://kvdb.io/8gYvT8u3J7Kx2Qp9W4N1mA/salamefx_distribution_data";
+    let lastCloudTimestamp = 0;
+    let syncTimeout = null;
+
+    function saveData(pushToCloud = true) {
       localStorage.setItem('dt_items', JSON.stringify(items));
       localStorage.setItem('dt_students', JSON.stringify(students));
       localStorage.setItem('dt_distributions', JSON.stringify(distributions));
       localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
+      if (pushToCloud) {
+        clearTimeout(syncTimeout);
+        syncTimeout = setTimeout(pushToCloudStorage, 300);
+      }
+    }
+
+    async function pushToCloudStorage() {
+      updateSyncStatus('syncing', 'Syncing to Cloud...');
+      const timestamp = Date.now();
+      lastCloudTimestamp = timestamp;
+
+      const payload = {
+        items,
+        students,
+        distributions,
+        teamMembers,
+        lastUpdated: timestamp
+      };
+
+      try {
+        await fetch(CLOUD_SYNC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        updateSyncStatus('live', 'Global Cloud Saved');
+      } catch (err) {
+        console.warn('Cloud sync error:', err);
+        updateSyncStatus('local', 'Saved Locally');
+      }
+    }
+
+    async function fetchFromCloudStorage(isBackgroundPoll = false) {
+      try {
+        const response = await fetch(CLOUD_SYNC_URL);
+        if (!response.ok) return;
+        const data = await response.json();
+
+        if (data && data.items && data.students && data.distributions) {
+          if (data.lastUpdated && data.lastUpdated > lastCloudTimestamp) {
+            lastCloudTimestamp = data.lastUpdated;
+            items = data.items;
+            students = data.students;
+            distributions = data.distributions;
+            if (data.teamMembers) teamMembers = data.teamMembers;
+
+            saveData(false);
+
+            const activeBtn = document.querySelector('nav button.font-semibold');
+            const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
+            switchTab(tabId);
+
+            if (isBackgroundPoll) {
+              updateSyncStatus('updated', 'Cloud Updated');
+              setTimeout(() => updateSyncStatus('live', 'Global Cloud Saved'), 2000);
+            } else {
+              updateSyncStatus('live', 'Global Cloud Saved');
+            }
+          }
+        }
+      } catch (err) {
+        // Silent fallback
+      }
+    }
+
+    function updateSyncStatus(type, text) {
+      const badge = document.getElementById('cloudSyncBadge');
+      const dot = document.getElementById('cloudSyncDot');
+      const label = document.getElementById('cloudSyncLabel');
+      if (!badge || !dot || !label) return;
+
+      label.innerText = text;
+      if (type === 'live') {
+        dot.className = 'w-2 h-2 rounded-full bg-[#4ade80] animate-pulse';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#1e271d] border border-[#2d422a] text-[#86efac] font-medium';
+      } else if (type === 'syncing') {
+        dot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-ping';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 font-medium';
+      } else if (type === 'updated') {
+        dot.className = 'w-2 h-2 rounded-full bg-cyan-400 animate-bounce';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-300 font-medium';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-slate-400';
+        badge.className = 'flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 border border-slate-700 text-slate-400 font-medium';
+      }
     }
 
     function showToast(msg) {
@@ -802,6 +892,10 @@
     document.addEventListener('DOMContentLoaded', () => {
       switchTab('distribute');
       initCursorParticles();
+      fetchFromCloudStorage(false);
+      setInterval(() => {
+        fetchFromCloudStorage(true);
+      }, 4000);
     });
 
     // SUBTLE CURSOR PARTICLE ANIMATION
