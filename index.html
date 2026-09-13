@@ -406,32 +406,27 @@
       { id: 'team-3', name: 'Alex Johnson', email: 'alex@eventteam.org', role: 'Coordinator', isOwner: false }
     ];
 
-    let items = JSON.parse(localStorage.getItem('dt_items')) || DEFAULT_ITEMS;
-    let students = JSON.parse(localStorage.getItem('dt_students')) || DEFAULT_STUDENTS;
-    let distributions = JSON.parse(localStorage.getItem('dt_distributions')) || DEFAULT_DISTRIBUTIONS;
-    let teamMembers = JSON.parse(localStorage.getItem('dt_team')) || DEFAULT_TEAM;
+    let items = DEFAULT_ITEMS;
+    let students = DEFAULT_STUDENTS;
+    let distributions = DEFAULT_DISTRIBUTIONS;
+    let teamMembers = DEFAULT_TEAM;
 
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: OWNER_NAME } : m);
 
-    const CLOUD_SYNC_URL = "https://distribution-tracker-default-rtdb.firebaseio.com/salamefx_live_data.json";
+    const MYSQL_API_URL = "/api/db";
+    const FIREBASE_SYNC_URL = "https://distribution-tracker-default-rtdb.firebaseio.com/salamefx_live_data.json";
     let lastCloudTimestamp = 0;
     let syncTimeout = null;
 
-    function saveData(pushToCloud = true) {
-      localStorage.setItem('dt_items', JSON.stringify(items));
-      localStorage.setItem('dt_students', JSON.stringify(students));
-      localStorage.setItem('dt_distributions', JSON.stringify(distributions));
-      localStorage.setItem('dt_team', JSON.stringify(teamMembers));
-
-      if (pushToCloud) {
-        clearTimeout(syncTimeout);
-        syncTimeout = setTimeout(pushToCloudStorage, 300);
-      }
+    // Pure 100% Global Cloud Save System (NO LocalStorage)
+    function saveData() {
+      clearTimeout(syncTimeout);
+      syncTimeout = setTimeout(pushToCloudStorage, 150);
     }
 
     async function pushToCloudStorage() {
-      updateSyncStatus('syncing', 'Syncing to Cloud...');
+      updateSyncStatus('syncing', 'Saving Globally...');
       const timestamp = Date.now();
       lastCloudTimestamp = timestamp;
 
@@ -444,27 +439,51 @@
       };
 
       try {
-        const response = await fetch(CLOUD_SYNC_URL, {
-          method: 'PUT',
+        // Try MySQL / HeidiSQL API Endpoint first
+        let res = await fetch(MYSQL_API_URL, {
+          method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        if (response.ok) {
-          updateSyncStatus('live', 'Global Cloud Saved');
+        
+        if (!res.ok) {
+          // Fallback to Firebase Global REST API
+          res = await fetch(FIREBASE_SYNC_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+        }
+
+        if (res.ok) {
+          updateSyncStatus('live', 'Saved Globally');
         } else {
-          throw new Error('Push failed');
+          throw new Error('Save Failed');
         }
       } catch (err) {
-        console.warn('Cloud sync push warning:', err);
-        updateSyncStatus('local', 'Saved Locally');
+        console.warn('Global Save warning:', err);
+        updateSyncStatus('offline', 'Save Error');
       }
     }
 
     async function fetchFromCloudStorage(isBackgroundPoll = false) {
       try {
-        const response = await fetch(CLOUD_SYNC_URL);
-        if (!response.ok) return;
-        const data = await response.json();
+        if (!isBackgroundPoll) {
+          updateSyncStatus('syncing', 'Loading Global Data...');
+        }
+        
+        let response = await fetch(MYSQL_API_URL);
+        let data = null;
+        if (response.ok) {
+          data = await response.json();
+        }
+
+        if (!data || !data.items) {
+          response = await fetch(FIREBASE_SYNC_URL);
+          if (response.ok) {
+            data = await response.json();
+          }
+        }
 
         if (data && data.items && data.students && data.distributions) {
           if (!lastCloudTimestamp || (data.lastUpdated && data.lastUpdated > lastCloudTimestamp)) {
@@ -474,22 +493,22 @@
             distributions = data.distributions;
             if (data.teamMembers) teamMembers = data.teamMembers;
 
-            saveData(false);
-
             const activeBtn = document.querySelector('nav button.font-semibold');
             const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
             switchTab(tabId);
 
             if (isBackgroundPoll) {
-              updateSyncStatus('updated', 'Cloud Updated');
-              setTimeout(() => updateSyncStatus('live', 'Global Cloud Saved'), 2000);
+              updateSyncStatus('updated', 'Global Data Updated');
+              setTimeout(() => updateSyncStatus('live', 'Saved Globally'), 1500);
             } else {
-              updateSyncStatus('live', 'Global Cloud Saved');
+              updateSyncStatus('live', 'Saved Globally');
             }
           }
+        } else if (!data && !isBackgroundPoll) {
+          pushToCloudStorage();
         }
       } catch (err) {
-        console.warn('Cloud fetch warning:', err);
+        console.warn('Global Cloud fetch error:', err);
       }
     }
 
@@ -899,7 +918,7 @@
       fetchFromCloudStorage(false);
       setInterval(() => {
         fetchFromCloudStorage(true);
-      }, 4000);
+      }, 2000);
     });
 
     // SUBTLE CURSOR PARTICLE ANIMATION
