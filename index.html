@@ -801,7 +801,81 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       switchTab('distribute');
+      initCursorParticles();
     });
+
+    // SUBTLE CURSOR PARTICLE ANIMATION
+    function initCursorParticles() {
+      const canvas = document.createElement('canvas');
+      canvas.id = 'cursorCanvas';
+      canvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;';
+      document.body.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      let particles = [];
+      let width = (canvas.width = window.innerWidth);
+      let height = (canvas.height = window.innerHeight);
+
+      window.addEventListener('resize', () => {
+        width = canvas.width = window.innerWidth;
+        height = canvas.height = window.innerHeight;
+      });
+
+      const colors = ['rgba(134, 239, 172, ', 'rgba(243, 238, 227, ', 'rgba(147, 197, 253, '];
+
+      let lastX = 0, lastY = 0;
+      window.addEventListener('mousemove', (e) => {
+        const dist = Math.hypot(e.clientX - lastX, e.clientY - lastY);
+        if (dist > 6) {
+          createParticle(e.clientX, e.clientY);
+          lastX = e.clientX;
+          lastY = e.clientY;
+        }
+      });
+
+      function createParticle(x, y) {
+        if (particles.length > 35) return; // Keep lightweight & subtle
+        const colorPrefix = colors[Math.floor(Math.random() * colors.length)];
+        particles.push({
+          x: x + (Math.random() - 0.5) * 6,
+          y: y + (Math.random() - 0.5) * 6,
+          size: Math.random() * 2.5 + 1.5,
+          vx: (Math.random() - 0.5) * 0.8,
+          vy: (Math.random() - 0.5) * 0.8 - 0.2,
+          alpha: 0.7,
+          decay: Math.random() * 0.02 + 0.02,
+          colorPrefix: colorPrefix
+        });
+      }
+
+      function animate() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.alpha -= p.decay;
+          p.size = Math.max(0, p.size - 0.04);
+
+          if (p.alpha <= 0 || p.size <= 0) {
+            particles.splice(i, 1);
+            continue;
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.colorPrefix + p.alpha + ')';
+          ctx.shadowBlur = 6;
+          ctx.shadowColor = p.colorPrefix + '0.5)';
+          ctx.fill();
+        }
+
+        requestAnimationFrame(animate);
+      }
+
+      animate();
+    }
   </script>
 </body>
 </html>
