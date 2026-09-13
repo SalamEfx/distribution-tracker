@@ -414,7 +414,7 @@
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: OWNER_NAME } : m);
 
-    const CLOUD_SYNC_URL = "https://kvdb.io/8gYvT8u3J7Kx2Qp9W4N1mA/salamefx_distribution_data";
+    const CLOUD_SYNC_URL = "https://distribution-tracker-default-rtdb.firebaseio.com/salamefx_live_data.json";
     let lastCloudTimestamp = 0;
     let syncTimeout = null;
 
@@ -444,14 +444,18 @@
       };
 
       try {
-        await fetch(CLOUD_SYNC_URL, {
-          method: 'POST',
+        const response = await fetch(CLOUD_SYNC_URL, {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        updateSyncStatus('live', 'Global Cloud Saved');
+        if (response.ok) {
+          updateSyncStatus('live', 'Global Cloud Saved');
+        } else {
+          throw new Error('Push failed');
+        }
       } catch (err) {
-        console.warn('Cloud sync error:', err);
+        console.warn('Cloud sync push warning:', err);
         updateSyncStatus('local', 'Saved Locally');
       }
     }
@@ -463,8 +467,8 @@
         const data = await response.json();
 
         if (data && data.items && data.students && data.distributions) {
-          if (data.lastUpdated && data.lastUpdated > lastCloudTimestamp) {
-            lastCloudTimestamp = data.lastUpdated;
+          if (!lastCloudTimestamp || (data.lastUpdated && data.lastUpdated > lastCloudTimestamp)) {
+            lastCloudTimestamp = data.lastUpdated || Date.now();
             items = data.items;
             students = data.students;
             distributions = data.distributions;
@@ -485,7 +489,7 @@
           }
         }
       } catch (err) {
-        // Silent fallback
+        console.warn('Cloud fetch warning:', err);
       }
     }
 
