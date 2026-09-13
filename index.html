@@ -15,15 +15,6 @@
           fontFamily: {
             sans: ['Inter', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
             mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace']
-          },
-          colors: {
-            brand: {
-              50: '#ecfdf5',
-              100: '#d1fae5',
-              500: '#10b981',
-              600: '#059669',
-              700: '#047857'
-            }
           }
         }
       }
@@ -96,11 +87,11 @@
   <!-- TOP APP HEADER -->
   <header class="sticky top-0 z-40 glass-header px-4 sm:px-8 py-3.5 flex items-center justify-between">
     
-    {/* Left Logo */}
+    <!-- Left Logo -->
     <div class="flex items-center gap-3">
       <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-teal-500 to-cyan-400 p-0.5 shadow-lg shadow-emerald-500/20">
-        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-bold text-emerald-400 text-lg">
-          📋
+        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center font-bold text-emerald-400">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
         </div>
       </div>
       <div>
@@ -142,19 +133,19 @@
   <!-- NAVIGATION TABS BAR -->
   <nav class="bg-slate-950/60 border-b border-slate-800/80 px-4 sm:px-8 flex gap-2 sm:gap-6 text-xs font-semibold overflow-x-auto">
     <button onclick="switchTab('distribute')" id="tab-distribute" class="py-3 px-3 text-emerald-400 border-b-2 border-emerald-400 font-bold transition-all flex items-center gap-2">
-      <span>🚀</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
       <span>Distribute</span>
     </button>
     <button onclick="switchTab('overview')" id="tab-overview" class="py-3 px-3 text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
-      <span>📊</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
       <span>Overview</span>
     </button>
     <button onclick="switchTab('manage')" id="tab-manage" class="py-3 px-3 text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
-      <span>⚙️</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
       <span>Manage</span>
     </button>
     <button onclick="switchTab('team')" id="tab-team" class="py-3 px-3 text-slate-400 hover:text-slate-200 transition-all flex items-center gap-2">
-      <span>🛡️</span>
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
       <span>Team & Permissions</span>
     </button>
   </nav>
@@ -164,7 +155,7 @@
     
     <!-- Toast Alert Notification -->
     <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-emerald-500 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-2xl shadow-emerald-500/20 transition-all opacity-0 pointer-events-none transform translate-y-2 flex items-center gap-2">
-      <span>✨</span>
+      <svg class="w-4 h-4 text-slate-950" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
       <span id="toastText">Notification text</span>
     </div>
 
@@ -187,12 +178,14 @@
               placeholder="Search student by name..." 
               class="w-full pl-9 pr-3 py-2 rounded-xl text-xs glass-input text-slate-200 placeholder-slate-500"
             />
-            <span class="absolute left-3 top-2.5 text-slate-500 text-xs">🔍</span>
+            <span class="absolute left-3 top-2.5 text-slate-500 text-xs">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+            </span>
           </div>
         </div>
       </div>
 
-      {/* Distribution Matrix Table Card */}
+      <!-- Distribution Matrix Table Card -->
       <div class="glass-card overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full text-left border-collapse">
@@ -226,11 +219,11 @@
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="glass-card p-5 flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Students</div>
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Students</div>
             <div id="statTotalStudents" class="text-3xl font-extrabold text-white mt-1 font-mono">0</div>
           </div>
-          <div class="p-3.5 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20 text-xl">
-            👥
+          <div class="p-3.5 bg-blue-500/10 rounded-xl text-blue-400 border border-blue-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
           </div>
         </div>
 
@@ -239,8 +232,8 @@
             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Item Types</div>
             <div id="statTotalItems" class="text-3xl font-extrabold text-white mt-1 font-mono">0</div>
           </div>
-          <div class="p-3.5 bg-purple-500/10 rounded-xl text-purple-400 border border-purple-500/20 text-xl">
-            📦
+          <div class="p-3.5 bg-purple-500/10 rounded-xl text-purple-400 border border-purple-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
           </div>
         </div>
 
@@ -249,8 +242,8 @@
             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Total Distributed</div>
             <div id="statGivenTotal" class="text-3xl font-extrabold text-emerald-400 mt-1 font-mono">0</div>
           </div>
-          <div class="p-3.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20 text-xl">
-            ✅
+          <div class="p-3.5 bg-emerald-500/10 rounded-xl text-emerald-400 border border-emerald-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
           </div>
         </div>
 
@@ -259,8 +252,8 @@
             <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Completion Rate</div>
             <div id="statCompletionPct" class="text-3xl font-extrabold text-cyan-400 mt-1 font-mono">0%</div>
           </div>
-          <div class="p-3.5 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20 text-xl">
-            📈
+          <div class="p-3.5 bg-cyan-500/10 rounded-xl text-cyan-400 border border-cyan-500/20">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
           </div>
         </div>
       </div>
@@ -289,13 +282,13 @@
             <span>+</span> Add Student
           </button>
           <button onclick="openPasteModal()" class="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5">
-            <span>📋</span> Bulk Import
+            <span>Bulk Import</span>
           </button>
           <button onclick="openAddItemModal()" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold rounded-xl shadow-md transition-colors flex items-center gap-1.5">
             <span>+</span> Add Item
           </button>
           <button onclick="exportCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl shadow-md transition-colors flex items-center gap-1.5">
-            <span>📥</span> Export CSV
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
@@ -734,7 +727,7 @@
                         : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500/40 shadow-sm'
                     }"
                   >
-                    ${isAdmin ? 'Revoke Admin' : '⭐ Grant Admin Power'}
+                    ${isAdmin ? 'Revoke Admin' : 'Grant Admin Power'}
                   </button>
 
                   <button 
@@ -742,7 +735,7 @@
                     class="p-1.5 rounded-lg bg-slate-800 hover:bg-red-500/20 text-slate-400 hover:text-red-400 border border-slate-700 text-xs transition-colors"
                     title="Remove member"
                   >
-                    🗑️
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                   </button>
                 </div>
               ` : `<span class="text-[10px] text-amber-400 font-mono font-semibold">Primary Super Admin</span>`}
