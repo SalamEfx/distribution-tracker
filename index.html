@@ -56,7 +56,6 @@
       outline: none;
       border-color: #786e5e;
     }
-    /* Matrix Circular Toggle Button Styling */
     .circle-toggle {
       width: 2rem;
       height: 2rem;
@@ -77,7 +76,6 @@
       border-color: transparent;
       box-shadow: 0 0 12px rgba(0,0,0,0.4);
     }
-    /* Scrollbars */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #161512; }
     ::-webkit-scrollbar-thumb { background: #343029; border-radius: 9999px; }
@@ -99,8 +97,11 @@
         Live
       </span>
 
-      <div class="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium">
-        testforfun2787 • Admin
+      <!-- Owner Account Pill -->
+      <div className="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium flex items-center gap-1.5">
+        <span class="text-amber-400 font-bold">👑</span>
+        <span>salamabdulsalam8111@gmail.com</span>
+        <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold">OWNER</span>
       </div>
 
       <button onclick="alert('Signed out successfully.')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] border border-[#3b352e] text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
@@ -121,7 +122,7 @@
       Manage
     </button>
     <button onclick="switchTab('team')" id="tab-team" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
-      Team
+      Team & Permissions
     </button>
   </nav>
 
@@ -162,7 +163,6 @@
             <thead>
               <tr class="border-b border-[#343029] text-[#a39b8c] font-medium bg-[#1e1c18]">
                 <th class="p-4 uppercase tracking-wider font-semibold w-48">Student</th>
-                <!-- Item headers rendered dynamically via JS -->
                 <tbody id="matrixHeaderRow" class="contents"></tbody>
                 <th class="p-4 text-center uppercase tracking-wider font-semibold w-24">Total</th>
               </tr>
@@ -256,38 +256,27 @@
       </div>
     </section>
 
-    <!-- SECTION 4: TEAM TAB -->
-    <section id="sec-team" class="space-y-6 hidden max-w-2xl">
-      <div>
-        <h2 class="text-2xl font-bold serif-title text-[#f3eee3]">Team & Staff Members</h2>
-        <p class="text-xs text-[#a39b8c] mt-1">Manage admin permissions for distribution coordinators.</p>
-      </div>
-
-      <div class="custom-card p-5 space-y-3">
-        <div class="flex items-center justify-between p-3 bg-[#1b1815] rounded-xl border border-[#343029]">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-[#3b82f6]/20 text-[#60a5fa] font-bold text-xs flex items-center justify-center">
-              TF
-            </div>
-            <div>
-              <div class="text-xs font-bold text-[#f3eee3]">testforfun2787</div>
-              <div class="text-[10px] text-[#a39b8c]">testforfun2787@gmail.com</div>
-            </div>
-          </div>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-[#86efac]/10 text-[#86efac] font-semibold border border-[#86efac]/20">Owner Admin</span>
+    <!-- SECTION 4: TEAM & ADMIN PERMISSIONS TAB -->
+    <section id="sec-team" class="space-y-6 hidden max-w-3xl">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-2xl font-bold serif-title text-[#f3eee3]">Team & Admin Permissions</h2>
+          <p class="text-xs text-[#a39b8c] mt-1">As the Owner (<strong>salamabdulsalam8111@gmail.com</strong>), you can grant or revoke Admin power to users.</p>
         </div>
 
-        <div class="flex items-center justify-between p-3 bg-[#1b1815] rounded-xl border border-[#343029]">
-          <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-[#ec4899]/20 text-[#f472b6] font-bold text-xs flex items-center justify-center">
-              SA
-            </div>
-            <div>
-              <div class="text-xs font-bold text-[#f3eee3]">salam</div>
-              <div class="text-[10px] text-[#a39b8c]">salam@eventteam.org</div>
-            </div>
-          </div>
-          <span class="text-[10px] px-2 py-0.5 rounded bg-[#93c5fd]/10 text-[#93c5fd] font-semibold border border-[#93c5fd]/20">Coordinator</span>
+        <button onclick="openAddTeamModal()" class="px-4 py-2 rounded-xl bg-[#274026] hover:bg-[#315230] border border-[#3c633a] text-xs font-semibold text-[#86efac]">
+          + Add Team Member
+        </button>
+      </div>
+
+      <div class="custom-card p-5 space-y-4">
+        <div className="text-xs text-[#a39b8c] font-medium border-b border-[#343029] pb-3 flex items-center justify-between">
+          <span>Active Organization Members</span>
+          <span id="teamCountBadge" className="font-mono text-[#f3eee3]">0 Members</span>
+        </div>
+
+        <div id="teamMemberList" class="space-y-3">
+          <!-- Rendered via JS -->
         </div>
       </div>
     </section>
@@ -354,9 +343,38 @@
     </div>
   </div>
 
+  <!-- MODAL: ADD TEAM MEMBER -->
+  <div id="modalAddTeam" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm hidden">
+    <div class="custom-card w-full max-w-sm p-6 space-y-4">
+      <h3 class="text-base font-bold serif-title text-[#f3eee3]">Add Team Member</h3>
+      <form onsubmit="handleAddTeamMember(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="text-[#a39b8c] font-medium">User Name *</label>
+          <input type="text" id="inputTeamName" required placeholder="e.g. Sarah Miller" class="w-full p-2.5 rounded-xl custom-input mt-1" />
+        </div>
+        <div>
+          <label class="text-[#a39b8c] font-medium">User Email Address *</label>
+          <input type="email" id="inputTeamEmail" required placeholder="e.g. sarah@example.com" class="w-full p-2.5 rounded-xl custom-input mt-1" />
+        </div>
+        <div>
+          <label class="text-[#a39b8c] font-medium">Initial Role</label>
+          <select id="inputTeamRole" class="w-full p-2.5 rounded-xl custom-input mt-1">
+            <option value="Coordinator">Coordinator (Distribution Only)</option>
+            <option value="Admin">Admin (Full Management Power)</option>
+          </select>
+        </div>
+        <div class="flex justify-end gap-2 pt-2">
+          <button type="button" onclick="closeModal('modalAddTeam')" class="px-3 py-1.5 rounded-lg bg-[#27231e] text-[#a39b8c]">Cancel</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-[#274026] text-[#86efac] font-semibold">Add Member</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT APP LOGIC -->
   <script>
-    // Initial Seed Datasets matching user screenshots
+    const OWNER_EMAIL = "salamabdulsalam8111@gmail.com";
+
     const DEFAULT_ITEMS = [
       { id: 'item-1', name: 'sim', color: '#8b5cf6' },
       { id: 'item-2', name: 'nbn', color: '#ef4444' },
@@ -372,21 +390,27 @@
       { id: 'std-3', name: 'shamir' }
     ];
 
-    // Initial Distribution Matrix: stdId_itemId -> true/false
     const DEFAULT_DISTRIBUTIONS = {
-      'std-1_item-2': true, // Hhd received nbn
-      'std-2_item-4': true  // salam received visa
+      'std-1_item-2': true,
+      'std-2_item-4': true
     };
 
-    // State Variables
+    const DEFAULT_TEAM = [
+      { id: 'team-1', name: 'Salam (Owner)', email: OWNER_EMAIL, role: 'Owner Admin', isOwner: true },
+      { id: 'team-2', name: 'Shamir', email: 'shamir@eventteam.org', role: 'Admin', isOwner: false },
+      { id: 'team-3', name: 'Alex Johnson', email: 'alex@eventteam.org', role: 'Coordinator', isOwner: false }
+    ];
+
     let items = JSON.parse(localStorage.getItem('dt_items')) || DEFAULT_ITEMS;
     let students = JSON.parse(localStorage.getItem('dt_students')) || DEFAULT_STUDENTS;
     let distributions = JSON.parse(localStorage.getItem('dt_distributions')) || DEFAULT_DISTRIBUTIONS;
+    let teamMembers = JSON.parse(localStorage.getItem('dt_team')) || DEFAULT_TEAM;
 
     function saveData() {
       localStorage.setItem('dt_items', JSON.stringify(items));
       localStorage.setItem('dt_students', JSON.stringify(students));
       localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+      localStorage.setItem('dt_team', JSON.stringify(teamMembers));
     }
 
     function showToast(msg) {
@@ -398,7 +422,6 @@
       }, 3000);
     }
 
-    // Tab Switcher
     function switchTab(tabName) {
       document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('nav button').forEach(btn => {
@@ -414,17 +437,15 @@
       if (tabName === 'distribute') renderDistributeTable();
       if (tabName === 'overview') renderOverview();
       if (tabName === 'manage') renderManageLists();
+      if (tabName === 'team') renderTeamList();
     }
 
-    // Render Matrix Distribute Table
     function renderDistributeTable() {
       const headerContainer = document.getElementById('matrixHeaderRow');
       const tbody = document.getElementById('matrixTableBody');
       const searchVal = document.getElementById('studentSearch')?.value.toLowerCase() || '';
 
-      // 1. Render Table Header Items
       headerContainer.innerHTML = items.map(item => {
-        // Calculate total count given for this item
         const countGiven = students.filter(s => distributions[`${s.id}_${item.id}`]).length;
         return `
           <th class="p-3 text-center border-l border-[#2d2923] font-mono">
@@ -437,7 +458,6 @@
         `;
       }).join('');
 
-      // 2. Render Table Student Rows
       const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchVal));
 
       if (filteredStudents.length === 0) {
@@ -481,7 +501,6 @@
       }).join('');
     }
 
-    // Toggle Checklist Checkmark
     function toggleCheck(studentId, itemId) {
       const key = `${studentId}_${itemId}`;
       distributions[key] = !distributions[key];
@@ -489,7 +508,6 @@
       renderDistributeTable();
     }
 
-    // Render Overview Statistics Tab
     function renderOverview() {
       document.getElementById('statTotalStudents').innerText = students.length;
       document.getElementById('statTotalItems').innerText = items.length;
@@ -524,9 +542,7 @@
       }).join('');
     }
 
-    // Render Manage Lists (Matching Screenshot 2)
     function renderManageLists() {
-      // Students List
       const stdListEl = document.getElementById('manageStudentsList');
       stdListEl.innerHTML = students.map(s => {
         const countReceived = items.filter(i => distributions[`${s.id}_${i.id}`]).length;
@@ -545,7 +561,6 @@
         `;
       }).join('');
 
-      // Items List
       const itemListEl = document.getElementById('manageItemsList');
       itemListEl.innerHTML = items.map(i => {
         const countGiven = students.filter(s => distributions[`${s.id}_${i.id}`]).length;
@@ -566,7 +581,117 @@
       }).join('');
     }
 
-    // Add Student Action
+    // Render Team & Admin Permissions
+    function renderTeamList() {
+      const listEl = document.getElementById('teamMemberList');
+      document.getElementById('teamCountBadge').innerText = `${teamMembers.length} Members`;
+
+      listEl.innerHTML = teamMembers.map(m => {
+        const isAdmin = m.role === 'Admin' || m.role === 'Owner Admin';
+        const isOwner = m.isOwner || m.email === OWNER_EMAIL;
+
+        return `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#1b1815] rounded-xl border border-[#343029] gap-3">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-full ${isOwner ? 'bg-amber-500/20 text-amber-300' : isAdmin ? 'bg-[#86efac]/20 text-[#86efac]' : 'bg-[#93c5fd]/20 text-[#93c5fd]'} font-bold text-xs flex items-center justify-center border border-current">
+                ${m.name.substring(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div class="text-xs font-bold text-[#f3eee3] flex items-center gap-2">
+                  <span>${m.name}</span>
+                  ${isOwner ? '<span class="text-amber-400">👑</span>' : ''}
+                </div>
+                <div class="text-[11px] text-[#a39b8c] font-mono">${m.email}</div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-3 justify-between sm:justify-end border-t sm:border-t-0 border-[#2d2923] pt-2 sm:pt-0">
+              <span class="text-[10px] px-2.5 py-1 rounded-full font-semibold border ${
+                isOwner ? 'bg-amber-500/15 text-amber-300 border-amber-500/30' :
+                isAdmin ? 'bg-[#86efac]/15 text-[#86efac] border-[#86efac]/30' :
+                'bg-[#93c5fd]/15 text-[#93c5fd] border-[#93c5fd]/30'
+              }">
+                ${m.role}
+              </span>
+
+              ${!isOwner ? `
+                <div class="flex items-center gap-2">
+                  <button 
+                    onclick="toggleAdminRole('${m.id}')" 
+                    class="px-3 py-1 rounded-lg text-xs font-semibold border transition-colors ${
+                      isAdmin 
+                        ? 'bg-[#27231e] hover:bg-[#342e28] text-[#a39b8c] border-[#3b352e]' 
+                        : 'bg-[#274026] hover:bg-[#315230] text-[#86efac] border-[#3c633a]'
+                    }"
+                  >
+                    ${isAdmin ? 'Revoke Admin' : '⭐ Grant Admin Power'}
+                  </button>
+
+                  <button 
+                    onclick="removeTeamMember('${m.id}')"
+                    class="px-2.5 py-1 rounded-lg bg-[#27231e] hover:bg-red-950/40 text-red-400 hover:text-red-300 border border-[#3b352e] text-xs"
+                    title="Remove member"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              ` : `<span class="text-[10px] text-amber-400 font-mono italic">Primary Super Admin</span>`}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Toggle Admin Power
+    function toggleAdminRole(memberId) {
+      teamMembers = teamMembers.map(m => {
+        if (m.id === memberId) {
+          const newRole = m.role === 'Admin' ? 'Coordinator' : 'Admin';
+          showToast(newRole === 'Admin' ? `Granted Admin power to ${m.name}` : `Revoked Admin power from ${m.name}`);
+          return { ...m, role: newRole };
+        }
+        return m;
+      });
+      saveData();
+      renderTeamList();
+    }
+
+    function removeTeamMember(memberId) {
+      if (confirm("Remove team member?")) {
+        teamMembers = teamMembers.filter(m => m.id !== memberId);
+        saveData();
+        renderTeamList();
+        showToast("Team member removed.");
+      }
+    }
+
+    function openAddTeamModal() { document.getElementById('modalAddTeam').classList.remove('hidden'); }
+
+    function handleAddTeamMember(e) {
+      e.preventDefault();
+      const name = document.getElementById('inputTeamName').value.trim();
+      const email = document.getElementById('inputTeamEmail').value.trim();
+      const role = document.getElementById('inputTeamRole').value;
+
+      if (!name || !email) return;
+
+      teamMembers.push({
+        id: `team-${Date.now()}`,
+        name,
+        email,
+        role,
+        isOwner: false
+      });
+
+      saveData();
+      closeModal('modalAddTeam');
+      document.getElementById('inputTeamName').value = '';
+      document.getElementById('inputTeamEmail').value = '';
+      showToast(`Added ${name} as ${role}!`);
+      renderTeamList();
+    }
+
+    // Modal Control Functions
     function openAddStudentModal() { document.getElementById('modalAddStudent').classList.remove('hidden'); }
     function openPasteModal() { document.getElementById('modalPasteStudents').classList.remove('hidden'); }
     function openAddItemModal() { document.getElementById('modalAddItem').classList.remove('hidden'); }
@@ -631,7 +756,6 @@
       }
     }
 
-    // Export CSV Helper
     function exportCSV() {
       let csv = 'Student,' + items.map(i => i.name).join(',') + ',Total\n';
       students.forEach(s => {
@@ -652,7 +776,6 @@
       a.click();
     }
 
-    // Initialize App
     document.addEventListener('DOMContentLoaded', () => {
       switchTab('distribute');
     });
