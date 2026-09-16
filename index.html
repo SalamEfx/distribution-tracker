@@ -255,6 +255,12 @@
         <span id="cloudSyncLabel">Global Cloud Sync</span>
       </span>
 
+      <!-- Connect Firebase Cloud DB Button -->
+      <button onclick="openModal('modalFirebaseSettings')" title="Connect Firebase Realtime Cloud Database" class="px-2.5 py-1 rounded-full bg-[#2a2118] border border-[#facc15]/30 text-[#facc15] hover:bg-[#382b1d] transition-all flex items-center gap-1.5 font-medium">
+        <span>🔥</span>
+        <span>Firebase DB</span>
+      </button>
+
       <!-- Sound Toggle Button -->
       <button id="soundToggleBtn" onclick="toggleAudioMute()" title="Toggle Audio Feedback" class="p-1.5 rounded-xl bg-[#141210] border border-[#332e29] text-[#86efac] hover:text-[#facc15] hover:border-[#facc15]/40 transition-all flex items-center justify-center">
         <svg id="soundIconOn" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -939,6 +945,8 @@
       pushToCloudDatabase();
     }
 
+    const DIRECT_CLOUD_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a9ea66151a99';
+
     async function pushToCloudDatabase() {
       updateSyncStatus('syncing', 'Saving Globally...');
       const timestamp = Date.now();
@@ -953,6 +961,9 @@
         lastUpdated: timestamp
       };
 
+      let savedSuccessfully = false;
+
+      // 1. Try Vercel /api/db endpoint
       try {
         const res = await fetchWithTimeout('/api/db', {
           method: 'POST',
@@ -961,13 +972,29 @@
         }, 2500);
 
         if (res.ok) {
-          updateSyncStatus('live', 'Saved Globally');
-        } else {
-          updateSyncStatus('live', 'Saved');
+          savedSuccessfully = true;
         }
       } catch (e) {
-        updateSyncStatus('live', 'Saved');
+        // Vercel /api/db failed or unreachable
       }
+
+      // 2. Direct fallback to Persistent Cloud REST DB
+      if (!savedSuccessfully) {
+        try {
+          const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: 'dist_tracker_v1', data: payload })
+          }, 3000);
+          if (res.ok) {
+            savedSuccessfully = true;
+          }
+        } catch (err) {
+          console.error('Fallback cloud push failed:', err);
+        }
+      }
+
+      updateSyncStatus('live', savedSuccessfully ? 'Saved Globally' : 'Saved Locally');
     }
 
     async function fetchFromCloudDatabase(isBackgroundPoll = false) {
@@ -975,33 +1002,56 @@
       if (isBackgroundPoll) isCloudLoading = true;
 
       try {
-        const res = await fetchWithTimeout('/api/db', {}, 2500);
-        if (res.ok) {
-          const data = await res.json();
-          const rec = data.record || data;
-          if (rec && typeof rec === 'object') {
-            const cloudTime = rec.lastUpdated || 0;
-            const isLocalEmpty = (students.length === 0 && items.length === 0);
+        let rec = null;
 
-            if (!isBackgroundPoll || isLocalEmpty || cloudTime > lastCloudTimestamp) {
-              lastCloudTimestamp = cloudTime || Date.now();
-              if (Array.isArray(rec.items) && rec.items.length > 0) items = rec.items;
-              if (Array.isArray(rec.students) && rec.students.length > 0) students = rec.students;
-              if (rec.distributions && typeof rec.distributions === 'object') distributions = rec.distributions;
-              if (Array.isArray(rec.teamMembers) && rec.teamMembers.length > 0) teamMembers = rec.teamMembers;
-              if (rec.userCredentials && typeof rec.userCredentials === 'object') {
-                userCredentials = { ...userCredentials, ...rec.userCredentials };
-                localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
+        // 1. Try Vercel /api/db
+        try {
+          const res = await fetchWithTimeout('/api/db', {}, 2500);
+          if (res.ok) {
+            const data = await res.json();
+            rec = data.data || data.record || data;
+          }
+        } catch (e) {
+          // Vercel endpoint unreachable
+        }
+
+        // 2. Direct fallback to Persistent Cloud REST DB if /api/db failed or returned invalid data
+        if (!rec || typeof rec !== 'object' || (!rec.items && !rec.students && !rec.distributions)) {
+          try {
+            const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {}, 3000);
+            if (res.ok) {
+              const json = await res.json();
+              if (json && json.data && typeof json.data === 'object') {
+                rec = json.data;
               }
-
-              localStorage.setItem('dt_items', JSON.stringify(items));
-              localStorage.setItem('dt_students', JSON.stringify(students));
-              localStorage.setItem('dt_distributions', JSON.stringify(distributions));
-              localStorage.setItem('dt_team', JSON.stringify(teamMembers));
-
-              if (currentUser) renderUserProfileHeader();
-              renderActiveTab();
             }
+          } catch (err) {
+            console.error('Fallback cloud fetch failed:', err);
+          }
+        }
+
+        if (rec && typeof rec === 'object') {
+          const cloudTime = rec.lastUpdated || 0;
+          const isLocalEmpty = (students.length === 0 && items.length === 0);
+
+          if (!isBackgroundPoll || isLocalEmpty || cloudTime > lastCloudTimestamp) {
+            lastCloudTimestamp = cloudTime || Date.now();
+            if (Array.isArray(rec.items)) items = rec.items;
+            if (Array.isArray(rec.students)) students = rec.students;
+            if (rec.distributions && typeof rec.distributions === 'object') distributions = rec.distributions;
+            if (Array.isArray(rec.teamMembers)) teamMembers = rec.teamMembers;
+            if (rec.userCredentials && typeof rec.userCredentials === 'object') {
+              userCredentials = { ...userCredentials, ...rec.userCredentials };
+              localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
+            }
+
+            localStorage.setItem('dt_items', JSON.stringify(items));
+            localStorage.setItem('dt_students', JSON.stringify(students));
+            localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+            localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
+            if (currentUser) renderUserProfileHeader();
+            renderActiveTab();
           }
         }
       } catch (err) {
