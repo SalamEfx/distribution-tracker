@@ -563,6 +563,47 @@
         </div>
       </form>
     </div>
+  <!-- MODAL: FIREBASE REALTIME DATABASE CONFIG -->
+  <div id="modalFirebaseSettings" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-[#161412]/90 backdrop-blur-md hidden">
+    <div class="custom-card w-full max-w-lg p-6 space-y-5 border border-[#332e29] shadow-2xl relative">
+      <div class="flex items-center justify-between border-b border-[#332e29] pb-3">
+        <h3 class="text-base font-bold text-[#f3eee3] flex items-center gap-2">
+          <span>🔥</span> Connect Firebase Realtime Database
+        </h3>
+        <button onclick="closeModal('modalFirebaseSettings')" class="text-[#a39b8c] hover:text-[#f3eee3]">✕</button>
+      </div>
+
+      <p class="text-xs text-[#a39b8c] leading-relaxed">
+        Copy your <b>Database URL</b> from Tab 3 of your browser (Firebase Console) and paste it below for 100% instant 0ms WebSocket cross-device sync!
+      </p>
+
+      <form onsubmit="handleSaveFirebaseUrl(event)" class="space-y-4">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Firebase Realtime Database URL *</label>
+          <input 
+            type="url" 
+            id="inputFirebaseUrl" 
+            required 
+            placeholder="https://tracker-default-rtdb.firebaseio.com" 
+            class="w-full p-2.5 rounded-xl custom-input text-xs font-mono"
+          />
+        </div>
+
+        <div class="p-3 rounded-xl bg-[#141210] border border-[#332e29] text-[11px] text-[#a39b8c] space-y-1 font-mono">
+          <div class="text-[#facc15] font-bold">⚠️ Firebase Rules Check (In Firebase Console ➔ Rules tab):</div>
+          <div class="text-[#86efac]">{ ".read": true, ".write": true }</div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" onclick="closeModal('modalFirebaseSettings')" class="px-4 py-2 rounded-xl bg-[#27231e] text-xs font-semibold text-[#a39b8c] hover:text-[#f3eee3]">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-[#274026] hover:bg-[#315230] text-[#86efac] text-xs font-bold border border-[#3c633a]">
+            Connect & Start Live Sync
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- JAVASCRIPT APP LOGIC -->
@@ -945,9 +986,82 @@
       pushToCloudDatabase();
     }
 
-    const DIRECT_CLOUD_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a9ea66151a99';
+    let rtdbInstance = null;
+    let rtdbRef = null;
     let currentActiveTab = 'distribute';
     let isExplicitReset = false;
+
+    function initFirebaseCloud() {
+      const savedUrl = localStorage.getItem('dt_firebase_url');
+      if (!savedUrl) return false;
+
+      try {
+        if (typeof firebase !== 'undefined' && firebase.apps) {
+          if (!firebase.apps.length) {
+            firebase.initializeApp({ databaseURL: savedUrl });
+          }
+          rtdbInstance = firebase.database();
+          rtdbRef = rtdbInstance.ref('global_attendance_tracker');
+
+          // WebSocket live real-time listener: 0ms cross-device sync!
+          rtdbRef.on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data && typeof data === 'object') {
+              const cloudTime = data.lastUpdated || 0;
+              if (cloudTime > lastCloudTimestamp || students.length === 0) {
+                lastCloudTimestamp = cloudTime;
+                if (Array.isArray(data.items)) items = data.items;
+                if (Array.isArray(data.students)) students = data.students;
+                if (data.distributions && typeof data.distributions === 'object') distributions = data.distributions;
+                if (Array.isArray(data.teamMembers)) teamMembers = data.teamMembers;
+
+                localStorage.setItem('dt_items', JSON.stringify(items));
+                localStorage.setItem('dt_students', JSON.stringify(students));
+                localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+                localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
+                renderActiveTab();
+                updateSyncStatus('live', '🔥 Firebase Live');
+              }
+            }
+          });
+
+          updateSyncStatus('live', '🔥 Firebase Connected');
+          return true;
+        }
+      } catch (err) {
+        console.error('Firebase connection error:', err);
+      }
+      return false;
+    }
+
+    function handleSaveFirebaseUrl(e) {
+      e.preventDefault();
+      const inputEl = document.getElementById('inputFirebaseUrl');
+      const url = inputEl ? inputEl.value.trim() : '';
+      if (!url) return;
+
+      localStorage.setItem('dt_firebase_url', url);
+      closeModal('modalFirebaseSettings');
+      showToast('Connecting to Firebase Database...');
+
+      try {
+        if (firebase.apps.length > 0) {
+          firebase.app().delete().then(() => {
+            initFirebaseCloud();
+            pushToCloudDatabase();
+            showToast('🔥 Connected to Firebase Realtime Database!');
+          });
+        } else {
+          initFirebaseCloud();
+          pushToCloudDatabase();
+          showToast('🔥 Connected to Firebase Realtime Database!');
+        }
+      } catch (err) {
+        initFirebaseCloud();
+        pushToCloudDatabase();
+      }
+    }
 
     async function pushToCloudDatabase() {
       // Protection: Do not overwrite cloud with empty data unless explicitly triggered by delete buttons
@@ -969,33 +1083,28 @@
         lastUpdated: timestamp
       };
 
-      let savedSuccessfully = false;
-
-      // 1. Primary Global Shared Cloud DB (Guaranteed cross-device & cross-account sync)
-      try {
-        const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: 'dist_tracker_v1', data: payload })
-        }, 3000);
-
-        if (res.ok) {
-          savedSuccessfully = true;
+      // 1. Primary: Realtime Firebase WebSocket Push
+      if (rtdbRef) {
+        try {
+          rtdbRef.set(payload);
+          updateSyncStatus('live', '🔥 Firebase Live');
+          return;
+        } catch (err) {
+          console.error('Firebase push error:', err);
         }
-      } catch (err) {
-        console.error('Direct cloud DB push error:', err);
       }
 
-      // 2. Also notify Vercel /api/db endpoint if available
+      // 2. Secondary: Vercel /api/db endpoint
       try {
-        fetchWithTimeout('/api/db', {
+        await fetchWithTimeout('/api/db', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
-        }, 2000).catch(() => {});
-      } catch (e) {}
-
-      updateSyncStatus('live', savedSuccessfully ? 'Saved Globally' : 'Saved Locally');
+        }, 2500);
+        updateSyncStatus('live', 'Saved Globally');
+      } catch (e) {
+        updateSyncStatus('live', 'Saved Locally');
+      }
     }
 
     async function fetchFromCloudDatabase(isBackgroundPoll = false) {
@@ -1621,10 +1730,13 @@
       switchTab('distribute');
       initCursorParticles();
       
-      // Load latest saved state from shared cloud database immediately
+      // 1. Initialize Firebase Realtime Cloud Database
+      initFirebaseCloud();
+
+      // 2. Load latest saved state from shared cloud database immediately
       await fetchFromCloudDatabase(false);
 
-      // Start 1.5-second live polling loop for multi-computer sync
+      // 3. Start 1.5-second live polling loop for multi-computer sync
       setInterval(() => {
         fetchFromCloudDatabase(true);
       }, 1500);
