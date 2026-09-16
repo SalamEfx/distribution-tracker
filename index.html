@@ -861,6 +861,7 @@
     ];
     let lastCloudTimestamp = 0;
     let syncTimeout = null;
+    let hasFetchedInitialCloud = false;
 
     function saveData() {
       // Local cache for zero-lag UI
@@ -875,6 +876,11 @@
     }
 
     async function pushToCloudStorage() {
+      // Prevent initial un-synchronized local empty state from overwriting global cloud database
+      if (!hasFetchedInitialCloud && (students.length === 0 && items.length === 0)) {
+        return;
+      }
+
       updateSyncStatus('syncing', 'Saving Globally...');
       const timestamp = Date.now();
       lastCloudTimestamp = timestamp;
@@ -927,21 +933,33 @@
             if (res.ok) {
               const json = await res.json();
               data = json.record || json;
-              if (data && data.items && data.students) break;
+              if (data && typeof data === 'object') break;
             }
           } catch (e) {
             // Fallback to next endpoint
           }
         }
 
-        if (data && data.items && data.students && data.distributions) {
-          if (!lastCloudTimestamp || (data.lastUpdated && data.lastUpdated > lastCloudTimestamp)) {
-            lastCloudTimestamp = data.lastUpdated || Date.now();
-            items = data.items;
-            students = data.students;
-            distributions = data.distributions;
-            if (data.teamMembers) teamMembers = data.teamMembers;
-            if (data.userCredentials) {
+        if (data && (Array.isArray(data.items) || Array.isArray(data.students) || data.distributions)) {
+          const cloudItems = Array.isArray(data.items) ? data.items : [];
+          const cloudStudents = Array.isArray(data.students) ? data.students : [];
+          const cloudDistributions = data.distributions || {};
+          const cloudTime = data.lastUpdated || 0;
+
+          const isLocalEmpty = (students.length === 0 && items.length === 0);
+          const isCloudNewer = cloudTime > lastCloudTimestamp;
+          const isInitialLoad = !hasFetchedInitialCloud;
+
+          if (isInitialLoad || isLocalEmpty || isCloudNewer) {
+            lastCloudTimestamp = cloudTime || Date.now();
+            items = cloudItems;
+            students = cloudStudents;
+            distributions = cloudDistributions;
+
+            if (data.teamMembers && Array.isArray(data.teamMembers) && data.teamMembers.length > 0) {
+              teamMembers = data.teamMembers;
+            }
+            if (data.userCredentials && typeof data.userCredentials === 'object') {
               userCredentials = { ...userCredentials, ...data.userCredentials };
               localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
             }
@@ -950,6 +968,8 @@
             localStorage.setItem('dt_students', JSON.stringify(students));
             localStorage.setItem('dt_distributions', JSON.stringify(distributions));
             localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
+            hasFetchedInitialCloud = true;
 
             if (currentUser) renderUserProfileHeader();
 
@@ -963,11 +983,17 @@
             } else {
               updateSyncStatus('live', 'Saved Globally');
             }
+          } else {
+            hasFetchedInitialCloud = true;
           }
-        } else if (!isBackgroundPoll) {
-          updateSyncStatus('live', 'Saved Globally');
+        } else {
+          hasFetchedInitialCloud = true;
+          if (!isBackgroundPoll) {
+            updateSyncStatus('live', 'Saved Globally');
+          }
         }
       } catch (err) {
+        hasFetchedInitialCloud = true;
         updateSyncStatus('live', 'Saved');
       }
     }
@@ -1385,12 +1411,15 @@
       a.click();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
       loadInitialLocalData();
-      saveData();
       checkAuthSession();
       switchTab('distribute');
       initCursorParticles();
+      
+      // Perform immediate cloud fetch on page load BEFORE enabling background poll
+      await fetchFromCloudStorage(false);
+
       setInterval(() => {
         fetchFromCloudStorage(true);
       }, 2000);
