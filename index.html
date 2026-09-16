@@ -779,7 +779,6 @@
       };
 
       localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
-      saveData();
 
       loginUser({
         name: displayName,
@@ -803,20 +802,21 @@
           role: isOwner ? 'Owner Admin' : 'Coordinator',
           isOwner: isOwner
         });
-        saveData();
+        localStorage.setItem('dt_team', JSON.stringify(teamMembers));
       }
 
       document.getElementById('authModalOverlay').classList.add('hidden');
       renderUserProfileHeader();
+
+      // Immediately fetch global shared database so any account sees the latest shared data
+      fetchFromCloudDatabase(false);
 
       if (isNewSignUp) {
         showToast(`Welcome ${currentUser.name}! Add your students and items below.`);
         switchTab('manage');
       } else {
         showToast(`Welcome back, ${currentUser.name}!`);
-        const activeBtn = document.querySelector('nav button.font-semibold');
-        const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
-        switchTab(tabId);
+        switchTab(currentActiveTab || 'distribute');
       }
     }
 
@@ -947,8 +947,15 @@
 
     const DIRECT_CLOUD_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a9ea66151a99';
     let currentActiveTab = 'distribute';
+    let isExplicitReset = false;
 
     async function pushToCloudDatabase() {
+      // Protection: Do not overwrite cloud with empty data unless explicitly triggered by delete buttons
+      if (students.length === 0 && items.length === 0 && !isExplicitReset) {
+        console.warn("Prevented accidental wipe of global database.");
+        return;
+      }
+
       updateSyncStatus('syncing', 'Saving Globally...');
       const timestamp = Date.now();
       lastCloudTimestamp = timestamp;
@@ -1370,7 +1377,9 @@
       if (confirm(`Are you sure you want to delete ALL ${students.length} students?`)) {
         students = [];
         selectedStudentIds.clear();
+        isExplicitReset = true;
         saveData();
+        isExplicitReset = false;
         renderManageLists();
         showToast("All students deleted.");
       }
@@ -1392,7 +1401,9 @@
       if (confirm(`Are you sure you want to delete ALL ${items.length} items?`)) {
         items = [];
         selectedItemIds.clear();
+        isExplicitReset = true;
         saveData();
+        isExplicitReset = false;
         renderManageLists();
         showToast("All items deleted.");
       }
@@ -1405,7 +1416,9 @@
         distributions = {};
         selectedStudentIds.clear();
         selectedItemIds.clear();
+        isExplicitReset = true;
         saveData();
+        isExplicitReset = false;
         renderManageLists();
         showToast("All data reset to 0.");
       }
