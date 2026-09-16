@@ -468,6 +468,23 @@
     let teamMembers = DEFAULT_TEAM;
     let currentUser = null;
 
+    function loadInitialLocalData() {
+      try {
+        const savedItems = localStorage.getItem('dt_items');
+        const savedStudents = localStorage.getItem('dt_students');
+        const savedDistributions = localStorage.getItem('dt_distributions');
+        const savedTeam = localStorage.getItem('dt_team');
+
+        if (savedItems) items = JSON.parse(savedItems);
+        if (savedStudents) students = JSON.parse(savedStudents);
+        if (savedDistributions) distributions = JSON.parse(savedDistributions);
+        if (savedTeam) teamMembers = JSON.parse(savedTeam);
+      } catch (e) {
+        console.error("Local data load error:", e);
+      }
+    }
+    loadInitialLocalData();
+
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) ? { ...m, name: OWNER_NAME } : m);
 
@@ -1124,6 +1141,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      loadInitialLocalData();
       checkAuthSession();
       switchTab('distribute');
       initCursorParticles();
