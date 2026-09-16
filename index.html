@@ -375,7 +375,7 @@
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 class="text-2xl font-bold text-[#f3eee3]">Manage Lists</h2>
-          <p class="text-xs text-[#a39b8c] mt-1">Configure recipients, add items, import roster, or export CSV.</p>
+          <p class="text-xs text-[#a39b8c] mt-1">Configure recipients, add items, select entries, or bulk delete lists.</p>
         </div>
 
         <div class="flex flex-wrap items-center gap-2">
@@ -391,15 +391,29 @@
           <button onclick="exportCSV()" class="px-3.5 py-2 rounded-xl bg-[#27231e] hover:bg-[#342e28] text-[#a39b8c] hover:text-[#f3eee3] text-xs font-semibold border border-[#3b352e] transition-colors">
             Export CSV
           </button>
+          <button onclick="confirmResetAllData()" class="px-3.5 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 font-semibold text-xs border border-red-800/40 transition-colors">
+            Reset Everything
+          </button>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Students List Column -->
         <div class="custom-card p-6 space-y-4">
-          <h3 class="text-sm font-bold text-[#f3eee3] border-b border-[#343029] pb-3">
-            Students Roster
-          </h3>
+          <div class="flex items-center justify-between border-b border-[#343029] pb-3">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="selectAllStudents" onchange="toggleSelectAllStudents(this.checked)" class="rounded border-[#332e29] bg-[#141210] accent-[#facc15] cursor-pointer" title="Select All Students" />
+              <h3 class="text-sm font-bold text-[#f3eee3]">Students Roster</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnDeleteSelectedStudents" onclick="deleteSelectedStudents()" class="hidden px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 text-red-300 text-xs font-semibold border border-red-800/60 transition-colors">
+                Delete Selected (<span id="selectedStudentsCount">0</span>)
+              </button>
+              <button onclick="deleteAllStudents()" class="px-2.5 py-1 rounded-lg bg-[#27231e] hover:bg-red-950/50 text-red-400 hover:text-red-300 text-xs font-semibold border border-[#3b352e] transition-colors">
+                Delete All
+              </button>
+            </div>
+          </div>
           <div id="manageStudentsList" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             <!-- Dynamic Students List -->
           </div>
@@ -407,9 +421,20 @@
 
         <!-- Items List Column -->
         <div class="custom-card p-6 space-y-4">
-          <h3 class="text-sm font-bold text-[#f3eee3] border-b border-[#343029] pb-3">
-            Item Categories
-          </h3>
+          <div class="flex items-center justify-between border-b border-[#343029] pb-3">
+            <div class="flex items-center gap-2">
+              <input type="checkbox" id="selectAllItems" onchange="toggleSelectAllItems(this.checked)" class="rounded border-[#332e29] bg-[#141210] accent-[#facc15] cursor-pointer" title="Select All Items" />
+              <h3 class="text-sm font-bold text-[#f3eee3]">Item Categories</h3>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="btnDeleteSelectedItems" onclick="deleteSelectedItems()" class="hidden px-2.5 py-1 rounded-lg bg-red-950/70 hover:bg-red-900 text-red-300 text-xs font-semibold border border-red-800/60 transition-colors">
+                Delete Selected (<span id="selectedItemsCount">0</span>)
+              </button>
+              <button onclick="deleteAllItems()" class="px-2.5 py-1 rounded-lg bg-[#27231e] hover:bg-red-950/50 text-red-400 hover:text-red-300 text-xs font-semibold border border-[#3b352e] transition-colors">
+                Delete All
+              </button>
+            </div>
+          </div>
           <div id="manageItemsList" class="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             <!-- Dynamic Items List -->
           </div>
@@ -854,94 +879,149 @@
     }
 
     /* -------------------------------------------------------------
-       REALTIME SHARED CLOUD DATABASE SYNCHRONIZATION (Firebase)
+       REALTIME SHARED CLOUD DATABASE SYNCHRONIZATION
     ------------------------------------------------------------- */
-    const firebaseConfig = {
-      apiKey: "AIzaSyD18RBV8HPGpYk6KCRukrqZ0syjitw77J8",
-      authDomain: "tracker-7d62c.firebaseapp.com",
-      databaseURL: "https://tracker-7d62c-default-rtdb.firebaseio.com",
-      projectId: "tracker-7d62c",
-      storageBucket: "tracker-7d62c.firebasestorage.app",
-      messagingSenderId: "863786100056",
-      appId: "1:863786100056:web:1563b0d3b20adcf04af12d"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const trackerRef = firebase.database().ref('trackerData');
+    const CLOUD_ENDPOINTS = [
+      { url: "/api/db", method: "POST" },
+      { url: "https://kvdb.io/salamefx_tracker_9821734918237/attendance", method: "POST" }
+    ];
 
-    let isApplyingRemoteUpdate = false;
+    let lastCloudTimestamp = 0;
+    let isCloudLoading = false;
+
+    function loadInitialLocalData() {
+      try {
+        const savedItems = localStorage.getItem('dt_items');
+        const savedStudents = localStorage.getItem('dt_students');
+        const savedDistributions = localStorage.getItem('dt_distributions');
+        const savedTeam = localStorage.getItem('dt_team');
+        const savedCreds = localStorage.getItem('dt_user_creds');
+
+        if (savedItems) items = JSON.parse(savedItems);
+        if (savedStudents) students = JSON.parse(savedStudents);
+        if (savedDistributions) distributions = JSON.parse(savedDistributions);
+        if (savedTeam) teamMembers = JSON.parse(savedTeam);
+        if (savedCreds) userCredentials = JSON.parse(savedCreds);
+      } catch (e) {
+        console.error("Local data load error:", e);
+      }
+    }
 
     function saveData() {
-      // 1. Instant local cache so the UI never waits on the network
+      // 1. Instant local persistence for zero lag & local memory survival
       localStorage.setItem('dt_items', JSON.stringify(items));
       localStorage.setItem('dt_students', JSON.stringify(students));
       localStorage.setItem('dt_distributions', JSON.stringify(distributions));
       localStorage.setItem('dt_team', JSON.stringify(teamMembers));
       localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
 
-      // 2. Push to the shared Firebase database. Every tab/device with
-      //    startRealtimeSync() listening (see below) gets this pushed
-      //    to it instantly — no polling, no refresh needed.
-      pushToFirebase();
+      // 2. Push to global shared cloud database
+      pushToCloudDatabase();
     }
 
-    function pushToFirebase() {
-      if (isApplyingRemoteUpdate) return; // don't re-broadcast a change we just received
+    async function pushToCloudDatabase() {
       updateSyncStatus('syncing', 'Saving Globally...');
-      trackerRef.set({
+      const timestamp = Date.now();
+      lastCloudTimestamp = timestamp;
+
+      const payload = {
         items,
         students,
         distributions,
         teamMembers,
         userCredentials,
-        lastUpdated: firebase.database.ServerValue.TIMESTAMP
-      }).then(() => {
+        lastUpdated: timestamp
+      };
+
+      let savedGlobally = false;
+
+      for (const ep of CLOUD_ENDPOINTS) {
+        try {
+          const res = await fetch(ep.url, {
+            method: ep.method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (res.ok) {
+            savedGlobally = true;
+          }
+        } catch (e) {
+          // Fallback to next endpoint
+        }
+      }
+
+      if (savedGlobally) {
         updateSyncStatus('live', 'Saved Globally');
-      }).catch((err) => {
-        console.error('Firebase save error:', err);
-        updateSyncStatus('live', 'Saved (offline)');
-      });
+      } else {
+        updateSyncStatus('live', 'Saved');
+      }
     }
 
-    function startRealtimeSync() {
-      // This one listener does both jobs at once:
-      // - it fires ONCE immediately with whatever is already in the
-      //   shared database (so a brand-new visitor sees current state), then
-      // - it fires again EVERY time anyone, anywhere, changes the data
-      //   (so every open tab updates live, with no refresh).
-      trackerRef.on('value', (snapshot) => {
-        const cloudData = snapshot.val();
+    async function fetchFromCloudDatabase(isBackgroundPoll = false) {
+      if (isBackgroundPoll && isCloudLoading) return;
+      if (isBackgroundPoll) isCloudLoading = true;
 
-        if (!cloudData) {
-          // Nothing saved in the cloud yet — seed it with what we have.
-          pushToFirebase();
-          return;
+      try {
+        if (!isBackgroundPoll) {
+          updateSyncStatus('syncing', 'Connecting Cloud...');
         }
 
-        isApplyingRemoteUpdate = true;
+        let cloudData = null;
 
-        if (Array.isArray(cloudData.items)) items = cloudData.items;
-        if (Array.isArray(cloudData.students)) students = cloudData.students;
-        if (cloudData.distributions && typeof cloudData.distributions === 'object') distributions = cloudData.distributions;
-        if (Array.isArray(cloudData.teamMembers)) teamMembers = cloudData.teamMembers;
-        if (cloudData.userCredentials && typeof cloudData.userCredentials === 'object') {
-          userCredentials = cloudData.userCredentials;
-          localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
+        for (const ep of CLOUD_ENDPOINTS) {
+          try {
+            const res = await fetch(ep.url);
+            if (res.ok) {
+              const data = await res.json();
+              const rec = data.record || data;
+              if (rec && typeof rec === 'object' && (Array.isArray(rec.items) || Array.isArray(rec.students) || rec.distributions)) {
+                cloudData = rec;
+                if ((Array.isArray(rec.items) && rec.items.length > 0) || (Array.isArray(rec.students) && rec.students.length > 0)) {
+                  break;
+                }
+              }
+            }
+          } catch (e) {
+            // Fallback
+          }
         }
 
-        localStorage.setItem('dt_items', JSON.stringify(items));
-        localStorage.setItem('dt_students', JSON.stringify(students));
-        localStorage.setItem('dt_distributions', JSON.stringify(distributions));
-        localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+        if (cloudData) {
+          const cloudTime = cloudData.lastUpdated || 0;
+          const isLocalEmpty = (students.length === 0 && items.length === 0);
 
-        if (currentUser) renderUserProfileHeader();
-        renderActiveTab();
-        updateSyncStatus('live', 'Saved Globally');
+          if (!isBackgroundPoll || isLocalEmpty || cloudTime > lastCloudTimestamp) {
+            lastCloudTimestamp = cloudTime || Date.now();
+            if (Array.isArray(cloudData.items) && cloudData.items.length > 0) items = cloudData.items;
+            if (Array.isArray(cloudData.students) && cloudData.students.length > 0) students = cloudData.students;
+            if (cloudData.distributions && typeof cloudData.distributions === 'object') distributions = cloudData.distributions;
+            if (Array.isArray(cloudData.teamMembers) && cloudData.teamMembers.length > 0) teamMembers = cloudData.teamMembers;
+            if (cloudData.userCredentials && typeof cloudData.userCredentials === 'object') {
+              userCredentials = { ...userCredentials, ...cloudData.userCredentials };
+              localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
+            }
 
-        isApplyingRemoteUpdate = false;
-      }, (err) => {
-        console.error('Firebase listener error:', err);
-        updateSyncStatus('live', 'Saved (offline)');
-      });
+            localStorage.setItem('dt_items', JSON.stringify(items));
+            localStorage.setItem('dt_students', JSON.stringify(students));
+            localStorage.setItem('dt_distributions', JSON.stringify(distributions));
+            localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
+            if (currentUser) renderUserProfileHeader();
+            renderActiveTab();
+
+            if (isBackgroundPoll) {
+              updateSyncStatus('updated', 'Live Update Received');
+              setTimeout(() => updateSyncStatus('live', 'Saved Globally'), 1200);
+            } else {
+              updateSyncStatus('live', 'Saved Globally');
+            }
+          }
+        }
+      } catch (err) {
+        updateSyncStatus('live', 'Saved');
+      } finally {
+        isCloudLoading = false;
+      }
     }
 
     function renderActiveTab() {
@@ -1136,43 +1216,173 @@
       }).join('');
     }
 
+    let selectedStudentIds = new Set();
+    let selectedItemIds = new Set();
+
     function renderManageLists() {
       const stdListEl = document.getElementById('manageStudentsList');
-      stdListEl.innerHTML = students.map(s => {
-        const countReceived = items.filter(i => distributions[`${s.id}_${i.id}`]).length;
-        return `
-          <div class="flex items-center justify-between p-3 rounded-xl bg-[#1b1815] border border-[#343029]">
-            <div>
-              <span class="font-bold text-[#f3eee3] text-xs">${s.name}</span>
-              <span class="text-[11px] font-mono text-[#a39b8c] ml-2">${countReceived} / ${items.length} items</span>
+      if (!stdListEl) return;
+
+      if (students.length === 0) {
+        stdListEl.innerHTML = `<div class="p-4 text-center text-xs text-[#a39b8c]">No students in roster. Click <b>+ Add Student</b> above.</div>`;
+      } else {
+        stdListEl.innerHTML = students.map(s => {
+          const countReceived = items.filter(i => distributions[`${s.id}_${i.id}`]).length;
+          const isChecked = selectedStudentIds.has(s.id);
+          return `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-[#1b1815] border border-[#343029] hover:border-[#4a4237] transition-colors">
+              <div class="flex items-center gap-3">
+                <input type="checkbox" onchange="toggleSelectStudent('${s.id}', this.checked)" ${isChecked ? 'checked' : ''} class="rounded border-[#332e29] bg-[#141210] accent-[#facc15] cursor-pointer" />
+                <div>
+                  <span class="font-bold text-[#f3eee3] text-xs">${s.name}</span>
+                  <span class="text-[11px] font-mono text-[#a39b8c] ml-2">${countReceived} / ${items.length} items</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="deleteStudent('${s.id}')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-red-950/50 text-xs text-red-400 hover:text-red-300 font-medium border border-[#3b352e] transition-colors">
+                  Delete
+                </button>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="deleteStudent('${s.id}')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] text-xs text-[#f3eee3] font-medium border border-[#3b352e]">
-                Delete
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      }
 
       const itemListEl = document.getElementById('manageItemsList');
-      itemListEl.innerHTML = items.map(i => {
-        const countGiven = students.filter(s => distributions[`${s.id}_${i.id}`]).length;
-        return `
-          <div class="flex items-center justify-between p-3 rounded-xl bg-[#1b1815] border border-[#343029]">
-            <div class="flex items-center gap-2">
-              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${i.color}"></span>
-              <span class="font-bold text-[#f3eee3] text-xs">${i.name}</span>
-              <span class="text-[11px] font-mono text-[#a39b8c] ml-2">${countGiven} / ${students.length} given</span>
+      if (!itemListEl) return;
+
+      if (items.length === 0) {
+        itemListEl.innerHTML = `<div class="p-4 text-center text-xs text-[#a39b8c]">No item categories created. Click <b>+ Add Item</b> above.</div>`;
+      } else {
+        itemListEl.innerHTML = items.map(i => {
+          const countGiven = students.filter(s => distributions[`${s.id}_${i.id}`]).length;
+          const isChecked = selectedItemIds.has(i.id);
+          return `
+            <div class="flex items-center justify-between p-3 rounded-xl bg-[#1b1815] border border-[#343029] hover:border-[#4a4237] transition-colors">
+              <div class="flex items-center gap-3">
+                <input type="checkbox" onchange="toggleSelectItem('${i.id}', this.checked)" ${isChecked ? 'checked' : ''} class="rounded border-[#332e29] bg-[#141210] accent-[#facc15] cursor-pointer" />
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${i.color}"></span>
+                  <span class="font-bold text-[#f3eee3] text-xs">${i.name}</span>
+                  <span class="text-[11px] font-mono text-[#a39b8c] ml-2">${countGiven} / ${students.length} given</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="deleteItem('${i.id}')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-red-950/50 text-xs text-red-400 hover:text-red-300 font-medium border border-[#3b352e] transition-colors">
+                  Delete
+                </button>
+              </div>
             </div>
-            <div class="flex items-center gap-2">
-              <button onclick="deleteItem('${i.id}')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] text-xs text-[#f3eee3] font-medium border border-[#3b352e]">
-                Delete
-              </button>
-            </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      }
+
+      updateSelectedButtonsUI();
+    }
+
+    function toggleSelectStudent(id, isChecked) {
+      if (isChecked) selectedStudentIds.add(id);
+      else selectedStudentIds.delete(id);
+      updateSelectedButtonsUI();
+    }
+
+    function toggleSelectAllStudents(isChecked) {
+      if (isChecked) {
+        students.forEach(s => selectedStudentIds.add(s.id));
+      } else {
+        selectedStudentIds.clear();
+      }
+      renderManageLists();
+    }
+
+    function toggleSelectItem(id, isChecked) {
+      if (isChecked) selectedItemIds.add(id);
+      else selectedItemIds.delete(id);
+      updateSelectedButtonsUI();
+    }
+
+    function toggleSelectAllItems(isChecked) {
+      if (isChecked) {
+        items.forEach(i => selectedItemIds.add(i.id));
+      } else {
+        selectedItemIds.clear();
+      }
+      renderManageLists();
+    }
+
+    function updateSelectedButtonsUI() {
+      const btnStd = document.getElementById('btnDeleteSelectedStudents');
+      const countStd = document.getElementById('selectedStudentsCount');
+      if (btnStd && countStd) {
+        countStd.innerText = selectedStudentIds.size;
+        if (selectedStudentIds.size > 0) btnStd.classList.remove('hidden');
+        else btnStd.classList.add('hidden');
+      }
+
+      const btnItem = document.getElementById('btnDeleteSelectedItems');
+      const countItem = document.getElementById('selectedItemsCount');
+      if (btnItem && countItem) {
+        countItem.innerText = selectedItemIds.size;
+        if (selectedItemIds.size > 0) btnItem.classList.remove('hidden');
+        else btnItem.classList.add('hidden');
+      }
+    }
+
+    function deleteSelectedStudents() {
+      if (selectedStudentIds.size === 0) return;
+      if (confirm(`Delete ${selectedStudentIds.size} selected students?`)) {
+        students = students.filter(s => !selectedStudentIds.has(s.id));
+        selectedStudentIds.clear();
+        saveData();
+        renderManageLists();
+        showToast("Selected students deleted.");
+      }
+    }
+
+    function deleteAllStudents() {
+      if (students.length === 0) return showToast("No students to delete.");
+      if (confirm(`Are you sure you want to delete ALL ${students.length} students?`)) {
+        students = [];
+        selectedStudentIds.clear();
+        saveData();
+        renderManageLists();
+        showToast("All students deleted.");
+      }
+    }
+
+    function deleteSelectedItems() {
+      if (selectedItemIds.size === 0) return;
+      if (confirm(`Delete ${selectedItemIds.size} selected items?`)) {
+        items = items.filter(i => !selectedItemIds.has(i.id));
+        selectedItemIds.clear();
+        saveData();
+        renderManageLists();
+        showToast("Selected items deleted.");
+      }
+    }
+
+    function deleteAllItems() {
+      if (items.length === 0) return showToast("No items to delete.");
+      if (confirm(`Are you sure you want to delete ALL ${items.length} items?`)) {
+        items = [];
+        selectedItemIds.clear();
+        saveData();
+        renderManageLists();
+        showToast("All items deleted.");
+      }
+    }
+
+    function confirmResetAllData() {
+      if (confirm("Reset everything? This will delete ALL students, items, and attendance records globally.")) {
+        students = [];
+        items = [];
+        distributions = {};
+        selectedStudentIds.clear();
+        selectedItemIds.clear();
+        saveData();
+        renderManageLists();
+        showToast("All data reset to 0.");
+      }
     }
 
     function renderTeamList() {
@@ -1366,14 +1576,19 @@
       a.click();
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      loadInitialLocalData();
       checkAuthSession();
       switchTab('distribute');
       initCursorParticles();
+      
+      // Load latest saved state from shared cloud database immediately
+      await fetchFromCloudDatabase(false);
 
-      // Loads the current shared state immediately, then keeps this tab
-      // live-updated forever after — no polling, no refresh needed.
-      startRealtimeSync();
+      // Start 1.5-second live polling loop for multi-computer sync
+      setInterval(() => {
+        fetchFromCloudDatabase(true);
+      }, 1500);
     });
 
     // SUBTLE CURSOR PARTICLE ANIMATION
