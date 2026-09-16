@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Distribution Tracker</title>
 
+  <!-- Google Fonts: Anton -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
+
   <!-- Google Identity Services Library -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -16,6 +21,7 @@
       theme: {
         extend: {
           fontFamily: {
+            anton: ['Anton', 'sans-serif'],
             sans: ['system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
             serif: ['Georgia', 'Cambria', 'serif'],
             mono: ['SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
@@ -34,6 +40,10 @@
   </script>
 
   <style>
+    .font-anton {
+      font-family: 'Anton', sans-serif;
+      letter-spacing: 0.04em;
+    }
     body {
       background-color: #161512;
       color: #f3eee3;
@@ -197,7 +207,7 @@
   <!-- TOP APP HEADER -->
   <header class="border-b border-[#2d2923] px-6 py-4 flex items-center justify-between bg-[#161512]">
     <div class="flex items-center gap-3">
-      <h1 class="text-xl font-bold text-[#f3eee3] tracking-wide">Distribution Tracker</h1>
+      <h1 class="text-2xl font-anton font-normal text-[#f3eee3] tracking-widest uppercase">Distribution Tracker</h1>
     </div>
 
     <!-- Right Header Controls -->
@@ -216,16 +226,16 @@
 
   <!-- NAVIGATION TABS -->
   <nav class="border-b border-[#2d2923] px-6 flex gap-8 text-sm font-medium bg-[#161512]">
-    <button onclick="switchTab('distribute')" id="tab-distribute" class="py-3 text-[#86efac] border-b-2 border-[#86efac] font-semibold transition-colors">
+    <button onclick="switchTab('distribute')" id="tab-distribute" class="py-3 text-[#86efac] border-b-2 border-[#86efac] font-semibold transition-colors font-anton tracking-wider uppercase">
       Distribute
     </button>
-    <button onclick="switchTab('overview')" id="tab-overview" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+    <button onclick="switchTab('overview')" id="tab-overview" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors font-anton tracking-wider uppercase">
       Overview
     </button>
-    <button onclick="switchTab('manage')" id="tab-manage" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+    <button onclick="switchTab('manage')" id="tab-manage" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors font-anton tracking-wider uppercase">
       Manage
     </button>
-    <button onclick="switchTab('team')" id="tab-team" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+    <button onclick="switchTab('team')" id="tab-team" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors font-anton tracking-wider uppercase">
       Team & Permissions
     </button>
   </nav>
@@ -242,7 +252,7 @@
     <section id="sec-distribute" class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-[#f3eee3]">Distribute</h2>
+          <h2 class="text-3xl font-anton font-normal text-[#f3eee3] tracking-wider uppercase">Distribute</h2>
           <p class="text-xs text-[#a39b8c] mt-1">Tap a circle the moment someone receives an item.</p>
         </div>
 
@@ -899,7 +909,7 @@
           <th class="p-3 text-center border-r border-[#2d2923] min-w-[100px]">
             <div class="flex items-center justify-center gap-1.5 mb-1">
               <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
-              <span class="font-bold text-[#f3eee3] text-xs font-serif capitalize tracking-wide">${item.name}</span>
+              <span class="font-anton font-normal text-[#f3eee3] text-sm tracking-wider uppercase">${item.name}</span>
             </div>
             <div class="inline-block px-2 py-0.5 rounded-full bg-[#141210] border border-[#343029] text-[10px] text-[#a39b8c] font-mono">${countGiven} / ${students.length}</div>
           </th>
@@ -908,9 +918,9 @@
 
       thead.innerHTML = `
         <tr class="border-b border-[#343029] bg-[#141210] text-[11px] font-semibold text-[#a39b8c] uppercase tracking-wider">
-          <th class="p-4 pl-6 min-w-[160px] border-r border-[#2d2923] text-left">STUDENT</th>
+          <th class="p-4 pl-6 min-w-[160px] border-r border-[#2d2923] text-left font-anton text-sm tracking-wider text-[#a39b8c]">STUDENT</th>
           ${itemHeaderCols}
-          <th class="p-4 text-center min-w-[90px] border-l border-[#2d2923] text-[#f3eee3] font-bold font-serif">TOTAL</th>
+          <th class="p-4 text-center min-w-[90px] border-l border-[#2d2923] text-[#f3eee3] font-anton text-sm tracking-wider">TOTAL</th>
         </tr>
       `;
 
