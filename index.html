@@ -257,9 +257,26 @@
         </div>
       </div>
 
-      <!-- Student Checklist Cards Container -->
-      <div id="studentCardsContainer" class="space-y-4">
-        <!-- Dynamic Student Cards -->
+      <!-- Premium Matrix Table Card -->
+      <div class="custom-card overflow-hidden shadow-2xl border border-[#343029]">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse">
+            <thead>
+              <tr class="border-b border-[#343029] bg-[#1d1a16] text-[11px] font-semibold text-[#a39b8c] uppercase tracking-wider">
+                <th class="p-4 pl-6 min-w-[140px] border-r border-[#2d2923]">STUDENT</th>
+                <th class="p-0">
+                  <div id="matrixHeaderRow" class="flex items-center">
+                    <!-- Dynamic Item Headers -->
+                  </div>
+                </th>
+                <th class="p-4 text-center min-w-[90px] border-l border-[#2d2923] text-[#f3eee3] font-bold">Total</th>
+              </tr>
+            </thead>
+            <tbody id="matrixTableBody" class="divide-y divide-[#2d2923] text-xs">
+              <!-- Dynamic Rows -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 
@@ -877,79 +894,81 @@
     }
 
     function renderDistributeTable() {
-      const container = document.getElementById('studentCardsContainer');
-      if (!container) return;
+      const headerContainer = document.getElementById('matrixHeaderRow');
+      const tbody = document.getElementById('matrixTableBody');
+      if (!headerContainer || !tbody) return;
 
       const searchVal = document.getElementById('studentSearch')?.value.toLowerCase() || '';
+
+      // Render Item Headers with color dots & count pills
+      headerContainer.innerHTML = items.map(item => {
+        const countGiven = students.filter(s => distributions[`${s.id}_${item.id}`]).length;
+        return `
+          <div class="px-4 py-3 flex-1 min-w-[100px] text-center border-r border-[#2d2923] space-y-1">
+            <div class="flex items-center justify-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
+              <span class="font-bold text-[#f3eee3] text-xs font-serif capitalize">${item.name}</span>
+            </div>
+            <div class="inline-block px-2 py-0.5 rounded-full bg-[#1b1815] border border-[#343029] text-[10px] text-[#a39b8c] font-mono">${countGiven} / ${students.length}</div>
+          </div>
+        `;
+      }).join('');
+
       const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchVal));
 
       if (filteredStudents.length === 0) {
-        container.innerHTML = `
-          <div class="custom-card p-8 text-center text-[#a39b8c]">
-            No students found. Add students in the Manage tab.
-          </div>
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="${items.length + 2}" class="p-6 text-center text-[#a39b8c]">
+              No students found. Add students in the Manage tab.
+            </td>
+          </tr>
         `;
         return;
       }
 
-      container.innerHTML = filteredStudents.map(student => {
+      tbody.innerHTML = filteredStudents.map((student, idx) => {
         const countReceived = items.filter(i => distributions[`${student.id}_${i.id}`]).length;
-        const pct = items.length > 0 ? Math.round((countReceived / items.length) * 100) : 0;
 
-        const itemToggles = items.map(item => {
+        const cells = items.map(item => {
           const isChecked = !!distributions[`${student.id}_${item.id}`];
           return `
-            <button 
-              onclick="toggleCheck('${student.id}', '${item.id}')"
-              class="px-3.5 py-2 rounded-xl border flex items-center gap-2.5 transition-all text-xs ${
-                isChecked 
-                  ? 'bg-[#274026] border-[#3c633a] text-[#86efac] font-semibold shadow-md' 
-                  : 'bg-[#1b1815] border-[#343029] text-[#a39b8c] hover:border-[#4a4338] hover:text-[#f3eee3]'
-              }"
-              title="Toggle ${item.name} for ${student.name}"
-            >
-              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
-              <span class="font-bold uppercase tracking-wider text-[11px]">${item.name}</span>
-              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
-                isChecked ? 'bg-[#86efac] text-[#161512]' : 'border border-[#343029] text-transparent'
-              }">
-                ${isChecked ? '✓' : ''}
-              </span>
-            </button>
+            <td class="p-3 text-center border-r border-[#2d2923] flex-1 min-w-[100px]">
+              <div class="flex justify-center items-center">
+                <button 
+                  onclick="toggleCheck('${student.id}', '${item.id}')"
+                  class="w-9 h-9 rounded-full transition-all flex items-center justify-center ${
+                    isChecked 
+                      ? 'shadow-lg transform scale-105 font-bold text-white text-sm' 
+                      : 'border-2 border-[#3e382f] bg-[#1b1815] hover:border-[#6b6152] hover:scale-110'
+                  }"
+                  style="${isChecked ? `background-color: ${item.color}; border: none;` : ''}"
+                  title="${student.name} - ${item.name}"
+                >
+                  ${isChecked ? '✓' : ''}
+                </button>
+              </div>
+            </td>
           `;
         }).join('');
 
         return `
-          <div class="custom-card p-5 space-y-4 hover:border-[#4a4338] transition-all shadow-lg">
-            <!-- Card Header: Student Avatar, Name, Progress -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2d2923] pb-3">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-[#1b1815] border border-[#3b352e] text-xs font-mono font-bold text-[#f3eee3] flex items-center justify-center shadow-inner">
-                  ${student.name.substring(0,2).toUpperCase()}
-                </div>
-                <div>
-                  <h3 class="text-base font-bold text-[#f3eee3] tracking-wide">${student.name}</h3>
-                  <p class="text-xs text-[#a39b8c] font-mono">${countReceived} of ${items.length} items received</p>
-                </div>
+          <tr class="hover:bg-[#1b1815] transition-colors border-b border-[#2d2923]">
+            <td class="p-4 pl-6 font-bold text-[#f3eee3] border-r border-[#2d2923] min-w-[140px]">
+              <div class="flex items-center gap-2.5 text-xs">
+                <span class="text-[#a39b8c] font-mono text-[11px] font-normal">${idx + 1}</span>
+                <span class="font-bold tracking-wide">${student.name}</span>
               </div>
-
-              <!-- Completion Progress Bar -->
-              <div class="flex items-center gap-3 min-w-[180px]">
-                <div class="w-full bg-[#1b1815] h-2 rounded-full overflow-hidden border border-[#343029]">
-                  <div class="bg-[#86efac] h-full transition-all duration-500" style="width: ${pct}%"></div>
-                </div>
-                <span class="text-xs font-bold text-[#86efac] font-mono">${pct}%</span>
+            </td>
+            <td class="p-0">
+              <div class="flex items-center w-full">
+                ${cells}
               </div>
-            </div>
-
-            <!-- Item Checklist Toggles Directly Underneath Name -->
-            <div>
-              <div class="text-[10px] font-semibold text-[#a39b8c] uppercase tracking-wider mb-2">Item Distribution Checklist</div>
-              <div class="flex flex-wrap gap-2.5">
-                ${itemToggles}
-              </div>
-            </div>
-          </div>
+            </td>
+            <td class="p-4 text-center font-bold font-mono text-xs text-[#f3eee3] min-w-[90px] border-l border-[#2d2923]">
+              ${countReceived} / ${items.length}
+            </td>
+          </tr>
         `;
       }).join('');
     }
