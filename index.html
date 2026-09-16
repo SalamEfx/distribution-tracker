@@ -257,26 +257,9 @@
         </div>
       </div>
 
-      <!-- Matrix Table Card -->
-      <div class="custom-card overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse">
-            <thead>
-              <tr class="border-b border-[#343029] bg-[#1d1a16] text-[11px] font-semibold text-[#a39b8c] uppercase tracking-wider">
-                <th class="p-4 pl-6 min-w-[180px]">Student / Recipient</th>
-                <th class="p-4 min-w-[120px]">Progress</th>
-                <th id="matrixHeaderItems" class="p-0">
-                  <div id="matrixHeaderRow" class="flex items-center">
-                    <!-- Dynamic Item Headers -->
-                  </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody id="matrixTableBody" class="divide-y divide-[#2d2923] text-xs">
-              <!-- Dynamic Rows -->
-            </tbody>
-          </table>
-        </div>
+      <!-- Student Checklist Cards Container -->
+      <div id="studentCardsContainer" class="space-y-4">
+        <!-- Dynamic Student Cards -->
       </div>
     </section>
 
@@ -894,80 +877,79 @@
     }
 
     function renderDistributeTable() {
-      const headerContainer = document.getElementById('matrixHeaderRow');
-      const tbody = document.getElementById('matrixTableBody');
+      const container = document.getElementById('studentCardsContainer');
+      if (!container) return;
+
       const searchVal = document.getElementById('studentSearch')?.value.toLowerCase() || '';
-
-      headerContainer.innerHTML = items.map(item => {
-        const countGiven = students.filter(s => distributions[`${s.id}_${item.id}`]).length;
-        return `
-          <div class="px-3 py-2 flex-1 min-w-[80px] text-center border-l border-[#343029]">
-            <div class="flex items-center justify-center gap-1.5">
-              <span class="w-2.5 h-2.5 rounded-full" style="background-color: ${item.color}"></span>
-              <span class="font-bold text-[#f3eee3] text-xs uppercase">${item.name}</span>
-            </div>
-            <div class="text-[10px] text-[#a39b8c] font-mono mt-0.5">${countGiven}/${students.length}</div>
-          </div>
-        `;
-      }).join('');
-
       const filteredStudents = students.filter(s => s.name.toLowerCase().includes(searchVal));
 
       if (filteredStudents.length === 0) {
-        tbody.innerHTML = `
-          <tr>
-            <td colspan="${items.length + 2}" class="p-6 text-center text-[#a39b8c]">
-              No students found.
-            </td>
-          </tr>
+        container.innerHTML = `
+          <div class="custom-card p-8 text-center text-[#a39b8c]">
+            No students found. Add students in the Manage tab.
+          </div>
         `;
         return;
       }
 
-      tbody.innerHTML = filteredStudents.map(student => {
+      container.innerHTML = filteredStudents.map(student => {
         const countReceived = items.filter(i => distributions[`${student.id}_${i.id}`]).length;
         const pct = items.length > 0 ? Math.round((countReceived / items.length) * 100) : 0;
 
-        const cells = items.map(item => {
+        const itemToggles = items.map(item => {
           const isChecked = !!distributions[`${student.id}_${item.id}`];
           return `
-            <td class="p-3 text-center border-l border-[#343029]">
-              <button 
-                onclick="toggleCheck('${student.id}', '${item.id}')"
-                class="circle-toggle ${isChecked ? 'checked' : ''}"
-                title="${student.name} - ${item.name}"
-              >
-                ${isChecked ? '<span class="font-bold text-xs">✓</span>' : ''}
-              </button>
-            </td>
+            <button 
+              onclick="toggleCheck('${student.id}', '${item.id}')"
+              class="px-3.5 py-2 rounded-xl border flex items-center gap-2.5 transition-all text-xs ${
+                isChecked 
+                  ? 'bg-[#274026] border-[#3c633a] text-[#86efac] font-semibold shadow-md' 
+                  : 'bg-[#1b1815] border-[#343029] text-[#a39b8c] hover:border-[#4a4338] hover:text-[#f3eee3]'
+              }"
+              title="Toggle ${item.name} for ${student.name}"
+            >
+              <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
+              <span class="font-bold uppercase tracking-wider text-[11px]">${item.name}</span>
+              <span class="w-5 h-5 rounded-full flex items-center justify-center font-bold text-[10px] ${
+                isChecked ? 'bg-[#86efac] text-[#161512]' : 'border border-[#343029] text-transparent'
+              }">
+                ${isChecked ? '✓' : ''}
+              </span>
+            </button>
           `;
         }).join('');
 
         return `
-          <tr class="hover:bg-[#1b1815] transition-colors">
-            <td class="p-4 pl-6 font-bold text-[#f3eee3] flex items-center gap-3">
-              <div class="w-8 h-8 rounded-full bg-[#1b1815] border border-[#3b352e] text-xs text-[#a39b8c] font-mono flex items-center justify-center">
-                ${student.name.substring(0,2).toUpperCase()}
-              </div>
-              <span>${student.name}</span>
-            </td>
-            <td class="p-4">
-              <div class="space-y-1">
-                <div class="flex justify-between text-[11px] font-mono text-[#a39b8c]">
-                  <span>${countReceived}/${items.length}</span>
-                  <span class="text-[#86efac] font-bold">${pct}%</span>
+          <div class="custom-card p-5 space-y-4 hover:border-[#4a4338] transition-all shadow-lg">
+            <!-- Card Header: Student Avatar, Name, Progress -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2d2923] pb-3">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-[#1b1815] border border-[#3b352e] text-xs font-mono font-bold text-[#f3eee3] flex items-center justify-center shadow-inner">
+                  ${student.name.substring(0,2).toUpperCase()}
                 </div>
-                <div class="w-24 bg-[#1b1815] h-1.5 rounded-full overflow-hidden border border-[#343029]">
-                  <div class="bg-[#86efac] h-full transition-all duration-300" style="width: ${pct}%"></div>
+                <div>
+                  <h3 class="text-base font-bold text-[#f3eee3] tracking-wide">${student.name}</h3>
+                  <p class="text-xs text-[#a39b8c] font-mono">${countReceived} of ${items.length} items received</p>
                 </div>
               </div>
-            </td>
-            <td class="p-0">
-              <div class="flex items-center">
-                ${cells}
+
+              <!-- Completion Progress Bar -->
+              <div class="flex items-center gap-3 min-w-[180px]">
+                <div class="w-full bg-[#1b1815] h-2 rounded-full overflow-hidden border border-[#343029]">
+                  <div class="bg-[#86efac] h-full transition-all duration-500" style="width: ${pct}%"></div>
+                </div>
+                <span class="text-xs font-bold text-[#86efac] font-mono">${pct}%</span>
               </div>
-            </td>
-          </tr>
+            </div>
+
+            <!-- Item Checklist Toggles Directly Underneath Name -->
+            <div>
+              <div class="text-[10px] font-semibold text-[#a39b8c] uppercase tracking-wider mb-2">Item Distribution Checklist</div>
+              <div class="flex flex-wrap gap-2.5">
+                ${itemToggles}
+              </div>
+            </div>
+          </div>
         `;
       }).join('');
     }
