@@ -946,6 +946,7 @@
     }
 
     const DIRECT_CLOUD_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a9ea66151a99';
+    let currentActiveTab = 'distribute';
 
     async function pushToCloudDatabase() {
       updateSyncStatus('syncing', 'Saving Globally...');
@@ -963,36 +964,29 @@
 
       let savedSuccessfully = false;
 
-      // 1. Try Vercel /api/db endpoint
+      // 1. Primary Global Shared Cloud DB (Guaranteed cross-device & cross-account sync)
       try {
-        const res = await fetchWithTimeout('/api/db', {
-          method: 'POST',
+        const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }, 2500);
+          body: JSON.stringify({ name: 'dist_tracker_v1', data: payload })
+        }, 3000);
 
         if (res.ok) {
           savedSuccessfully = true;
         }
-      } catch (e) {
-        // Vercel /api/db failed or unreachable
+      } catch (err) {
+        console.error('Direct cloud DB push error:', err);
       }
 
-      // 2. Direct fallback to Persistent Cloud REST DB
-      if (!savedSuccessfully) {
-        try {
-          const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: 'dist_tracker_v1', data: payload })
-          }, 3000);
-          if (res.ok) {
-            savedSuccessfully = true;
-          }
-        } catch (err) {
-          console.error('Fallback cloud push failed:', err);
-        }
-      }
+      // 2. Also notify Vercel /api/db endpoint if available
+      try {
+        fetchWithTimeout('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }, 2000).catch(() => {});
+      } catch (e) {}
 
       updateSyncStatus('live', savedSuccessfully ? 'Saved Globally' : 'Saved Locally');
     }
@@ -1004,30 +998,28 @@
       try {
         let rec = null;
 
-        // 1. Try Vercel /api/db
+        // 1. Primary Global Shared Cloud DB
         try {
-          const res = await fetchWithTimeout('/api/db', {}, 2500);
+          const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {}, 3000);
           if (res.ok) {
-            const data = await res.json();
-            rec = data.data || data.record || data;
+            const json = await res.json();
+            if (json && json.data && typeof json.data === 'object') {
+              rec = json.data;
+            }
           }
-        } catch (e) {
-          // Vercel endpoint unreachable
+        } catch (err) {
+          console.error('Direct cloud fetch error:', err);
         }
 
-        // 2. Direct fallback to Persistent Cloud REST DB if /api/db failed or returned invalid data
-        if (!rec || typeof rec !== 'object' || (!rec.items && !rec.students && !rec.distributions)) {
+        // 2. Backup Vercel /api/db endpoint if primary cloud was unreachable
+        if (!rec || typeof rec !== 'object' || (!Array.isArray(rec.items) && !Array.isArray(rec.students))) {
           try {
-            const res = await fetchWithTimeout(DIRECT_CLOUD_URL, {}, 3000);
+            const res = await fetchWithTimeout('/api/db', {}, 2500);
             if (res.ok) {
-              const json = await res.json();
-              if (json && json.data && typeof json.data === 'object') {
-                rec = json.data;
-              }
+              const data = await res.json();
+              rec = data.data || data.record || data;
             }
-          } catch (err) {
-            console.error('Fallback cloud fetch failed:', err);
-          }
+          } catch (e) {}
         }
 
         if (rec && typeof rec === 'object') {
@@ -1063,12 +1055,10 @@
     }
 
     function renderActiveTab() {
-      const activeBtn = document.querySelector('nav button.font-semibold');
-      const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
-      if (tabId === 'distribute') renderDistributeTable();
-      if (tabId === 'overview') renderOverview();
-      if (tabId === 'manage') renderManageLists();
-      if (tabId === 'team') renderTeamList();
+      if (currentActiveTab === 'distribute') renderDistributeTable();
+      if (currentActiveTab === 'overview') renderOverview();
+      if (currentActiveTab === 'manage') renderManageLists();
+      if (currentActiveTab === 'team') renderTeamList();
     }
 
     function updateSyncStatus(type, text) {
@@ -1104,6 +1094,7 @@
     }
 
     function switchTab(tabName) {
+      currentActiveTab = tabName;
       document.querySelectorAll('section').forEach(el => el.classList.add('hidden'));
       document.querySelectorAll('nav button').forEach(btn => {
         btn.className = 'py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors';
@@ -1115,10 +1106,7 @@
         activeBtn.className = 'py-3 text-[#86efac] border-b-2 border-[#86efac] font-semibold transition-colors';
       }
 
-      if (tabName === 'distribute') renderDistributeTable();
-      if (tabName === 'overview') renderOverview();
-      if (tabName === 'manage') renderManageLists();
-      if (tabName === 'team') renderTeamList();
+      renderActiveTab();
     }
 
     function renderDistributeTable() {
