@@ -5,11 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Distribution Tracker</title>
 
-  <!-- Google Fonts: Anton -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&display=swap" rel="stylesheet">
-
   <!-- Google Identity Services Library -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
@@ -40,10 +35,6 @@
   </script>
 
   <style>
-    .font-anton {
-      font-family: 'Anton', sans-serif;
-      letter-spacing: 0.05em;
-    }
     body {
       background-color: #161512;
       color: #f3eee3;
@@ -909,7 +900,7 @@
           <th class="p-3 text-center border-r border-[#2d2923] min-w-[100px]">
             <div class="flex items-center justify-center gap-1.5 mb-1">
               <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${item.color}"></span>
-              <span class="font-anton text-[#f3eee3] text-sm tracking-wider uppercase">${item.name}</span>
+              <span class="font-bold text-[#f3eee3] text-xs">${item.name}</span>
             </div>
             <div class="inline-block px-2 py-0.5 rounded-full bg-[#141210] border border-[#343029] text-[10px] text-[#a39b8c] font-mono">${countGiven} / ${students.length}</div>
           </th>
@@ -918,9 +909,9 @@
 
       thead.innerHTML = `
         <tr class="border-b border-[#343029] bg-[#141210] text-[11px] font-semibold text-[#a39b8c] uppercase tracking-wider">
-          <th class="p-4 pl-6 min-w-[160px] border-r border-[#2d2923] text-left font-anton text-xs tracking-wider text-[#a39b8c]">STUDENT</th>
+          <th class="p-4 pl-6 min-w-[160px] border-r border-[#2d2923] text-left font-bold text-xs tracking-wider text-[#a39b8c]">STUDENT</th>
           ${itemHeaderCols}
-          <th class="p-4 text-center min-w-[90px] border-l border-[#2d2923] text-[#f3eee3] font-anton text-xs tracking-wider">TOTAL</th>
+          <th class="p-4 text-center min-w-[90px] border-l border-[#2d2923] text-[#f3eee3] font-bold text-xs tracking-wider">TOTAL</th>
         </tr>
       `;
 
