@@ -535,25 +535,9 @@
     const OWNER_EMAIL = "salamabdulsalam8111@gmail.com";
     const OWNER_NAME = "SalamEfx";
 
-    const DEFAULT_ITEMS = [
-      { id: 'item-1', name: 'sim', color: '#8b5cf6' },
-      { id: 'item-2', name: 'nbn', color: '#ef4444' },
-      { id: 'item-3', name: 'Chair', color: '#8b5cf6' },
-      { id: 'item-4', name: 'visa', color: '#3b82f6' },
-      { id: 'item-5', name: 'ticket', color: '#10b981' },
-      { id: 'item-6', name: 'present', color: '#f59e0b' }
-    ];
-
-    const DEFAULT_STUDENTS = [
-      { id: 'std-1', name: 'Hhd' },
-      { id: 'std-2', name: 'salam' },
-      { id: 'std-3', name: 'shamir' }
-    ];
-
-    const DEFAULT_DISTRIBUTIONS = {
-      'std-1_item-2': true,
-      'std-2_item-4': true
-    };
+    const DEFAULT_ITEMS = [];
+    const DEFAULT_STUDENTS = [];
+    const DEFAULT_DISTRIBUTIONS = {};
 
     const DEFAULT_TEAM = [
       { id: 'team-1', name: OWNER_NAME, email: OWNER_EMAIL, role: 'Owner Admin', isOwner: true }
@@ -577,11 +561,7 @@
         if (savedItems) items = JSON.parse(savedItems);
         if (savedStudents) students = JSON.parse(savedStudents);
         if (savedDistributions) distributions = JSON.parse(savedDistributions);
-        if (savedTeam) {
-          teamMembers = JSON.parse(savedTeam).filter(m => m.email.toLowerCase() !== 'shamir@eventteam.org' && m.email.toLowerCase() !== 'alex@eventteam.org');
-        } else {
-          teamMembers = DEFAULT_TEAM;
-        }
+        if (savedTeam) teamMembers = JSON.parse(savedTeam);
         if (savedCreds) userCredentials = JSON.parse(savedCreds);
       } catch (e) {
         console.error("Local data load error:", e);
@@ -762,13 +742,6 @@
         role: isOwner ? 'Owner Admin' : 'Coordinator',
         isOwner: isOwner
       };
-
-      // For new non-owner accounts, start with a fresh empty slate (empty items and students)
-      if (!isOwner) {
-        items = [];
-        students = [];
-        distributions = {};
-      }
 
       localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
       saveData();
@@ -1414,10 +1387,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       loadInitialLocalData();
+      saveData();
       checkAuthSession();
       switchTab('distribute');
       initCursorParticles();
-      fetchFromCloudStorage(false);
       setInterval(() => {
         fetchFromCloudStorage(true);
       }, 2000);
