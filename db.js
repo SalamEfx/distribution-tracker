@@ -1,21 +1,18 @@
 // Vercel Serverless API Backend for Attendance Tracker
-// Global Shared Persistent Cloud Database Handler
+// Global Shared Persistent Firebase Realtime Database Handler
 
-const REMOTE_DB_URL = 'https://api.restful-api.dev/objects/ff808181a09d98f701a0a9ea66151a99';
+const REMOTE_DB_URL = 'https://tracker-7d62c-default-rtdb.firebaseio.com/data.json';
 
-// Default initial state fallback if remote DB is empty
+// Default initial state fallback
 let cachedStore = {
   items: [
-    { id: "item-1", name: "mandi", color: "#a855f7" },
-    { id: "item-2", name: "biriyani", color: "#10b981" }
+    { id: "item-1", name: "mandi", color: "#a855f7" }
   ],
   students: [
-    { id: "std-1", name: "rasal" },
-    { id: "std-2", name: "rasal 2" }
+    { id: "std-1", name: "rasal" }
   ],
   distributions: {
-    "std-1_item-1": true,
-    "std-2_item-2": true
+    "std-1_item-1": true
   },
   teamMembers: [
     { id: "team-1", name: "SalamEfx", email: "salamabdulsalam8111@gmail.com", role: "Owner Admin", isOwner: true }
@@ -31,8 +28,8 @@ async function fetchFromRemoteCloud() {
     });
     if (res.ok) {
       const json = await res.json();
-      if (json && json.data && typeof json.data === 'object') {
-        cachedStore = json.data;
+      if (json && typeof json === 'object') {
+        cachedStore = json;
         return cachedStore;
       }
     }
@@ -48,14 +45,11 @@ async function saveToRemoteCloud(payload) {
     const res = await fetch(REMOTE_DB_URL, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'dist_tracker_v1',
-        data: payload
-      })
+      body: JSON.stringify(payload)
     });
     if (res.ok) {
       const json = await res.json();
-      return json.data || payload;
+      return json || payload;
     }
   } catch (err) {
     console.error('Remote DB save error:', err);
@@ -80,7 +74,7 @@ module.exports = async function handler(req, res) {
       if (payload && typeof payload === 'object' && (Array.isArray(payload.items) || Array.isArray(payload.students) || payload.distributions)) {
         payload.lastUpdated = payload.lastUpdated || Date.now();
         const savedData = await saveToRemoteCloud(payload);
-        return res.status(200).json({ success: true, message: 'Saved to Global Shared Cloud Database', data: savedData });
+        return res.status(200).json({ success: true, message: 'Saved to Global Firebase Realtime Database', data: savedData });
       }
       return res.status(400).json({ error: 'Invalid payload structure' });
     } catch (e) {

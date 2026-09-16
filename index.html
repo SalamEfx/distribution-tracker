@@ -986,14 +986,14 @@
       pushToCloudDatabase();
     }
 
+    const DEFAULT_FIREBASE_URL = 'https://tracker-7d62c-default-rtdb.firebaseio.com/';
     let rtdbInstance = null;
     let rtdbRef = null;
     let currentActiveTab = 'distribute';
     let isExplicitReset = false;
 
     function initFirebaseCloud() {
-      const savedUrl = localStorage.getItem('dt_firebase_url');
-      if (!savedUrl) return false;
+      const savedUrl = localStorage.getItem('dt_firebase_url') || DEFAULT_FIREBASE_URL;
 
       try {
         if (typeof firebase !== 'undefined' && firebase.apps) {
@@ -1001,7 +1001,7 @@
             firebase.initializeApp({ databaseURL: savedUrl });
           }
           rtdbInstance = firebase.database();
-          rtdbRef = rtdbInstance.ref('global_attendance_tracker');
+          rtdbRef = rtdbInstance.ref('attendance_tracker_data');
 
           // WebSocket live real-time listener: 0ms cross-device sync!
           rtdbRef.on('value', (snapshot) => {
