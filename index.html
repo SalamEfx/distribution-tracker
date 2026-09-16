@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Distribution Tracker</title>
 
+  <!-- Google Identity Services Library -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -78,7 +81,83 @@
     ::-webkit-scrollbar-thumb { background: #343029; border-radius: 9999px; }
   </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col relative">
+
+  <!-- MANDATORY GOOGLE AUTHENTICATION OVERLAY -->
+  <div id="authModalOverlay" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-[#161512]/95 backdrop-blur-md hidden">
+    <div class="custom-card w-full max-w-md p-8 space-y-6 text-center border border-[#3b352e] shadow-2xl">
+      <div class="space-y-2">
+        <div class="w-14 h-14 mx-auto rounded-full bg-[#274026] border border-[#3c633a] flex items-center justify-center text-[#86efac]">
+          <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457-.39-2.823-1.07-4" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-[#f3eee3] tracking-wide">Sign In Required</h2>
+        <p class="text-xs text-[#a39b8c]">Please log in with your Google account to access the Distribution Tracker.</p>
+      </div>
+
+      <!-- Google Sign-In Official Button Container -->
+      <div class="space-y-4 pt-2">
+        <div id="g_id_onload"
+             data-client_id="845239103984-google-oauth-client.apps.googleusercontent.com"
+             data-context="signin"
+             data-ux_mode="popup"
+             data-callback="handleGoogleCredential"
+             data-auto_prompt="false">
+        </div>
+
+        <div class="g_id_signin flex justify-center"
+             data-type="standard"
+             data-shape="pill"
+             data-theme="filled_black"
+             data-text="signin_with"
+             data-size="large"
+             data-logo_alignment="left">
+        </div>
+
+        <!-- Divider -->
+        <div class="relative flex py-2 items-center">
+          <div class="flex-grow border-t border-[#343029]"></div>
+          <span class="flex-shrink mx-4 text-[10px] text-[#a39b8c] uppercase tracking-wider">or sign in with google email</span>
+          <div class="flex-grow border-t border-[#343029]"></div>
+        </div>
+
+        <!-- Google Email Fast Sign-In Form -->
+        <form onsubmit="handleGoogleEmailSignIn(event)" class="space-y-3 text-left">
+          <div>
+            <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Google Email Address *</label>
+            <input 
+              type="email" 
+              id="googleSignInEmail" 
+              required 
+              placeholder="e.g. yourname@gmail.com" 
+              class="w-full p-3 rounded-xl custom-input text-xs font-mono"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Your Display Name *</label>
+            <input 
+              type="text" 
+              id="googleSignInName" 
+              required 
+              placeholder="e.g. John Doe" 
+              class="w-full p-3 rounded-xl custom-input text-xs"
+            />
+          </div>
+          <button 
+            type="submit" 
+            class="w-full py-3 rounded-xl bg-[#274026] hover:bg-[#315230] text-[#86efac] font-bold text-xs border border-[#3c633a] transition-all flex items-center justify-center gap-2 shadow-lg"
+          >
+            <span>Continue to Distribution Tracker</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="text-[10px] text-[#a39b8c] italic border-t border-[#2d2923] pt-4">
+        Owner super-admin status (SalamEfx) is granted automatically when signing in with salamabdulsalam8111@gmail.com.
+      </div>
+    </div>
+  </div>
 
   <!-- TOP APP HEADER -->
   <header class="border-b border-[#2d2923] px-6 py-4 flex items-center justify-between bg-[#161512]">
@@ -93,16 +172,10 @@
         <span id="cloudSyncLabel">Global Cloud Sync</span>
       </span>
 
-      <!-- Owner Account Pill -->
-      <div class="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium flex items-center gap-2">
-        <span class="font-bold text-[#f3eee3]">SalamEfx</span>
-        <span class="text-[#a39b8c] text-[11px] font-mono">(salamabdulsalam8111@gmail.com)</span>
-        <span class="text-[10px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-mono font-bold">OWNER</span>
+      <!-- Dynamic Per-User Profile Container -->
+      <div id="headerUserProfile" class="flex items-center gap-2">
+        <!-- Rendered dynamically by JavaScript -->
       </div>
-
-      <button onclick="alert('Signed out successfully.')" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] border border-[#3b352e] text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
-        Sign out
-      </button>
     </div>
   </header>
 
@@ -410,9 +483,141 @@
     let students = DEFAULT_STUDENTS;
     let distributions = DEFAULT_DISTRIBUTIONS;
     let teamMembers = DEFAULT_TEAM;
+    let currentUser = null;
 
     // Migrate owner name
-    teamMembers = teamMembers.map(m => (m.isOwner || m.email === OWNER_EMAIL) ? { ...m, name: OWNER_NAME } : m);
+    teamMembers = teamMembers.map(m => (m.isOwner || m.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) ? { ...m, name: OWNER_NAME } : m);
+
+    // GOOGLE IDENTITY & AUTHENTICATION MODULE
+    function parseJwt(token) {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function handleGoogleCredential(response) {
+      if (!response || !response.credential) return;
+      const payload = parseJwt(response.credential);
+      if (payload && payload.email) {
+        loginUser({
+          name: payload.name || payload.email.split('@')[0],
+          email: payload.email,
+          picture: payload.picture || null,
+          sub: payload.sub
+        });
+      }
+    }
+
+    function handleGoogleEmailSignIn(e) {
+      e.preventDefault();
+      const email = document.getElementById('googleSignInEmail').value.trim().toLowerCase();
+      const name = document.getElementById('googleSignInName').value.trim();
+      if (!email || !name) return;
+
+      loginUser({
+        name: email === OWNER_EMAIL.toLowerCase() ? OWNER_NAME : name,
+        email: email,
+        picture: null
+      });
+    }
+
+    function loginUser(userData) {
+      currentUser = userData;
+      localStorage.setItem('dt_current_user', JSON.stringify(currentUser));
+      
+      const isOwner = currentUser.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+      const existingMember = teamMembers.find(m => m.email.toLowerCase() === currentUser.email.toLowerCase());
+      
+      if (!existingMember) {
+        teamMembers.push({
+          id: `team-${Date.now()}`,
+          name: isOwner ? OWNER_NAME : currentUser.name,
+          email: currentUser.email,
+          role: isOwner ? 'Owner Admin' : 'Coordinator',
+          isOwner: isOwner
+        });
+        saveData();
+      }
+
+      document.getElementById('authModalOverlay').classList.add('hidden');
+      renderUserProfileHeader();
+      showToast(`Welcome, ${currentUser.name}!`);
+      
+      const activeBtn = document.querySelector('nav button.font-semibold');
+      const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
+      switchTab(tabId);
+    }
+
+    function signOutUser() {
+      currentUser = null;
+      localStorage.removeItem('dt_current_user');
+      renderUserProfileHeader();
+      document.getElementById('authModalOverlay').classList.remove('hidden');
+      showToast('Signed out successfully.');
+    }
+
+    function renderUserProfileHeader() {
+      const container = document.getElementById('headerUserProfile');
+      if (!container) return;
+
+      if (!currentUser) {
+        container.innerHTML = `
+          <button onclick="document.getElementById('authModalOverlay').classList.remove('hidden')" class="px-3.5 py-1.5 rounded-xl bg-[#274026] hover:bg-[#315230] border border-[#3c633a] text-[#86efac] font-semibold text-xs shadow-md transition-colors">
+            Sign in with Google
+          </button>
+        `;
+        return;
+      }
+
+      const isOwner = currentUser.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
+      const member = teamMembers.find(m => m.email.toLowerCase() === currentUser.email.toLowerCase());
+      const roleText = isOwner ? 'OWNER' : (member ? member.role.toUpperCase() : 'COORDINATOR');
+      
+      const roleBg = isOwner 
+        ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' 
+        : (roleText.includes('ADMIN') ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' : 'bg-blue-500/20 text-blue-300 border-blue-500/30');
+
+      const avatar = currentUser.picture 
+        ? `<img src="${currentUser.picture}" class="w-6 h-6 rounded-full border border-[#3b352e]" />`
+        : `<div class="w-6 h-6 rounded-full bg-[#1b1815] border border-[#3b352e] text-[10px] font-bold text-[#f3eee3] flex items-center justify-center">${(currentUser.name || 'U').substring(0,2).toUpperCase()}</div>`;
+
+      container.innerHTML = `
+        <div class="px-3 py-1 rounded-full bg-[#27231e] border border-[#3b352e] text-[#d6cebf] font-medium flex items-center gap-2">
+          ${avatar}
+          <span class="font-bold text-[#f3eee3]">${currentUser.name}</span>
+          <span class="text-[#a39b8c] text-[11px] font-mono">(${currentUser.email})</span>
+          <span class="text-[10px] px-1.5 py-0.2 rounded border font-mono font-bold ${roleBg}">${roleText}</span>
+        </div>
+        <button onclick="signOutUser()" class="px-3 py-1 rounded-lg bg-[#27231e] hover:bg-[#342e28] border border-[#3b352e] text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
+          Sign out
+        </button>
+      `;
+    }
+
+    function checkAuthSession() {
+      const saved = localStorage.getItem('dt_current_user');
+      if (saved) {
+        try {
+          currentUser = JSON.parse(saved);
+          renderUserProfileHeader();
+          document.getElementById('authModalOverlay').classList.add('hidden');
+        } catch (e) {
+          currentUser = null;
+          document.getElementById('authModalOverlay').classList.remove('hidden');
+        }
+      } else {
+        currentUser = null;
+        renderUserProfileHeader();
+        document.getElementById('authModalOverlay').classList.remove('hidden');
+      }
+    }
 
     const CLOUD_ENDPOINTS = [
       {
@@ -509,6 +714,8 @@
             localStorage.setItem('dt_students', JSON.stringify(students));
             localStorage.setItem('dt_distributions', JSON.stringify(distributions));
             localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+
+            if (currentUser) renderUserProfileHeader();
 
             const activeBtn = document.querySelector('nav button.font-semibold');
             const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
@@ -659,6 +866,10 @@
     }
 
     function toggleCheck(studentId, itemId) {
+      if (!currentUser) {
+        document.getElementById('authModalOverlay').classList.remove('hidden');
+        return;
+      }
       const key = `${studentId}_${itemId}`;
       distributions[key] = !distributions[key];
       saveData();
@@ -744,7 +955,7 @@
 
       listEl.innerHTML = teamMembers.map(m => {
         const isAdmin = m.role === 'Admin' || m.role === 'Owner Admin';
-        const isOwner = m.isOwner || m.email === OWNER_EMAIL;
+        const isOwner = m.isOwner || m.email.toLowerCase() === OWNER_EMAIL.toLowerCase();
 
         return `
           <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-[#1b1815] rounded-xl border border-[#343029] gap-3">
@@ -930,6 +1141,7 @@
     }
 
     document.addEventListener('DOMContentLoaded', () => {
+      checkAuthSession();
       switchTab('distribute');
       initCursorParticles();
       fetchFromCloudStorage(false);
