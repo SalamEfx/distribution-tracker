@@ -1,7 +1,7 @@
 // Vercel Serverless API Backend for Attendance Tracker
-// Global Real-Time Server Memory Store + Cloud Persistence
+// Direct Realtime Cloud Integration with Firebase Realtime Database
 
-let globalServerStore = null;
+const FIREBASE_RTDB_URL = "https://attendance-tracker-live-default-rtdb.firebaseio.com/shared_attendance_tracker.json";
 
 module.exports = async function handler(req, res) {
   // CORS Headers
@@ -13,52 +13,35 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
-  const PANTRY_URL = "https://getpantry.cloud/apiv1/pantry/a89f949c-3d2b-4e6a-9f1c-8b7a6c5d4e3f/basket/salamefx_distribution";
-
-  // 1. POST Request - Save global state
+  // 1. POST Request - Update Firebase Realtime Database
   if (req.method === 'POST') {
     try {
       const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      if (payload && typeof payload === 'object' && (Array.isArray(payload.items) || Array.isArray(payload.students) || payload.distributions)) {
-        globalServerStore = payload;
-
-        // Asynchronously persist to Pantry Cloud API
-        fetch(PANTRY_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        }).catch(err => console.warn('Pantry write warning:', err.message));
-
-        return res.status(200).json({ success: true, message: 'Saved to Global Server Store' });
+      const response = await fetch(FIREBASE_RTDB_URL, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (response.ok) {
+        return res.status(200).json({ success: true, message: 'Saved to Firebase Realtime Database' });
       }
-      return res.status(400).json({ error: 'Invalid payload structure' });
+      return res.status(500).json({ error: 'Failed to write to Firebase Realtime Database' });
     } catch (e) {
-      return res.status(400).json({ error: 'Invalid JSON body' });
+      return res.status(500).json({ error: e.message });
     }
   }
 
-  // 2. GET Request - Fetch global state
+  // 2. GET Request - Fetch global state from Firebase Realtime Database
   if (req.method === 'GET') {
-    // Return in-memory global store if available
-    if (globalServerStore && (Array.isArray(globalServerStore.items) || Array.isArray(globalServerStore.students) || globalServerStore.distributions)) {
-      return res.status(200).json(globalServerStore);
-    }
-
-    // Otherwise fetch from Pantry Cloud API fallback
     try {
-      const response = await fetch(PANTRY_URL);
+      const response = await fetch(FIREBASE_RTDB_URL);
       if (response.ok) {
         const data = await response.json();
-        if (data && typeof data === 'object' && (Array.isArray(data.items) || Array.isArray(data.students) || data.distributions)) {
-          globalServerStore = data;
-          return res.status(200).json(data);
-        }
+        return res.status(200).json(data || { items: [], students: [], distributions: {}, lastUpdated: 0 });
       }
     } catch (e) {
-      console.warn('Pantry GET error:', e.message);
+      console.warn('Firebase GET error:', e.message);
     }
-
-    // Default fallback if no data stored yet
-    return res.status(200).json(globalServerStore || { items: [], students: [], distributions: {}, lastUpdated: 0 });
+    return res.status(200).json({ items: [], students: [], distributions: {}, lastUpdated: 0 });
   }
 };

@@ -8,6 +8,10 @@
   <!-- Google Identity Services Library -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 
+  <!-- Firebase Realtime Database SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -849,41 +853,53 @@
       }
     }
 
-    const CLOUD_ENDPOINTS = [
-      {
-        url: "/api/db",
-        method: "POST"
-      },
-      {
-        url: "https://getpantry.cloud/apiv1/pantry/a89f949c-3d2b-4e6a-9f1c-8b7a6c5d4e3f/basket/salamefx_distribution",
-        method: "POST"
+    /* -------------------------------------------------------------
+       FIREBASE REALTIME DATABASE - GOOGLE SHEETS LIVE SYNC
+    ------------------------------------------------------------- */
+    const firebaseConfig = {
+      databaseURL: "https://attendance-tracker-live-default-rtdb.firebaseio.com"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+    const trackerRef = db.ref("shared_attendance_tracker");
+
+    let isCloudInitialized = false;
+
+    // LIVE WEBSOCKET LISTENER (Google Sheets style instant multi-user synchronization)
+    trackerRef.on("value", (snapshot) => {
+      const data = snapshot.val();
+      if (data && typeof data === "object") {
+        items = Array.isArray(data.items) ? data.items : [];
+        students = Array.isArray(data.students) ? data.students : [];
+        distributions = (data.distributions && typeof data.distributions === 'object') ? data.distributions : {};
+        if (Array.isArray(data.teamMembers)) teamMembers = data.teamMembers;
+        if (data.userCredentials && typeof data.userCredentials === 'object') {
+          userCredentials = { ...userCredentials, ...data.userCredentials };
+        }
+
+        isCloudInitialized = true;
+        updateSyncStatus('live', 'Live Realtime Connected');
+
+        // Re-render current active tab view immediately
+        const activeBtn = document.querySelector('nav button.font-semibold');
+        const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
+        if (tabId === 'distribute') renderDistributeTable();
+        if (tabId === 'overview') renderOverview();
+        if (tabId === 'manage') renderManageLists();
+        if (tabId === 'team') renderTeamList();
+      } else {
+        isCloudInitialized = true;
+        updateSyncStatus('live', 'Live Realtime Connected');
       }
-    ];
-    let lastCloudTimestamp = 0;
-    let syncTimeout = null;
-    let hasFetchedInitialCloud = false;
+    }, (error) => {
+      console.warn("Firebase listener error, using REST sync:", error);
+    });
 
     function saveData() {
-      // Local cache for zero-lag UI
-      localStorage.setItem('dt_items', JSON.stringify(items));
-      localStorage.setItem('dt_students', JSON.stringify(students));
-      localStorage.setItem('dt_distributions', JSON.stringify(distributions));
-      localStorage.setItem('dt_team', JSON.stringify(teamMembers));
-      localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
-
-      clearTimeout(syncTimeout);
-      syncTimeout = setTimeout(pushToCloudStorage, 150);
-    }
-
-    async function pushToCloudStorage() {
-      // Prevent initial un-synchronized local empty state from overwriting global cloud database
-      if (!hasFetchedInitialCloud && (students.length === 0 && items.length === 0)) {
-        return;
-      }
-
-      updateSyncStatus('syncing', 'Saving Globally...');
-      const timestamp = Date.now();
-      lastCloudTimestamp = timestamp;
+      updateSyncStatus('syncing', 'Saving Live...');
 
       const payload = {
         items,
@@ -891,117 +907,19 @@
         distributions,
         teamMembers,
         userCredentials,
-        lastUpdated: timestamp
+        lastUpdated: Date.now()
       };
 
-      let savedGlobally = false;
-
-      for (const ep of CLOUD_ENDPOINTS) {
-        try {
-          const res = await fetch(ep.url, {
-            method: ep.method,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-          if (res.ok) {
-            savedGlobally = true;
-            break;
-          }
-        } catch (e) {
-          // Fallback to next endpoint
-        }
-      }
-
-      if (savedGlobally) {
-        updateSyncStatus('live', 'Saved Globally');
-      } else {
-        updateSyncStatus('live', 'Saved');
-      }
-    }
-
-    async function fetchFromCloudStorage(isBackgroundPoll = false) {
-      try {
-        if (!isBackgroundPoll) {
-          updateSyncStatus('syncing', 'Loading Cloud Data...');
-        }
-
-        let validCloudData = null;
-
-        for (const ep of CLOUD_ENDPOINTS) {
-          try {
-            const res = await fetch(ep.url);
-            if (res.ok) {
-              const json = await res.json();
-              const rec = json.record || json;
-              if (rec && typeof rec === 'object' && (Array.isArray(rec.items) || Array.isArray(rec.students) || rec.distributions)) {
-                validCloudData = rec;
-                if ((Array.isArray(rec.items) && rec.items.length > 0) || (Array.isArray(rec.students) && rec.students.length > 0)) {
-                  break;
-                }
-              }
-            }
-          } catch (e) {
-            // Fallback to next endpoint
-          }
-        }
-
-        if (validCloudData) {
-          const cloudItems = Array.isArray(validCloudData.items) ? validCloudData.items : [];
-          const cloudStudents = Array.isArray(validCloudData.students) ? validCloudData.students : [];
-          const cloudDistributions = validCloudData.distributions || {};
-          const cloudTime = validCloudData.lastUpdated || 0;
-
-          const isLocalEmpty = (students.length === 0 && items.length === 0);
-          const isCloudHasData = (cloudStudents.length > 0 || cloudItems.length > 0);
-          const isCloudNewer = cloudTime > lastCloudTimestamp;
-          const isInitialLoad = !hasFetchedInitialCloud;
-
-          if (isInitialLoad || (isLocalEmpty && isCloudHasData) || isCloudNewer) {
-            lastCloudTimestamp = cloudTime || Date.now();
-            items = cloudItems;
-            students = cloudStudents;
-            distributions = cloudDistributions;
-
-            if (validCloudData.teamMembers && Array.isArray(validCloudData.teamMembers) && validCloudData.teamMembers.length > 0) {
-              teamMembers = validCloudData.teamMembers;
-            }
-            if (validCloudData.userCredentials && typeof validCloudData.userCredentials === 'object') {
-              userCredentials = { ...userCredentials, ...validCloudData.userCredentials };
-              localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
-            }
-
-            localStorage.setItem('dt_items', JSON.stringify(items));
-            localStorage.setItem('dt_students', JSON.stringify(students));
-            localStorage.setItem('dt_distributions', JSON.stringify(distributions));
-            localStorage.setItem('dt_team', JSON.stringify(teamMembers));
-
-            hasFetchedInitialCloud = true;
-
-            if (currentUser) renderUserProfileHeader();
-
-            const activeBtn = document.querySelector('nav button.font-semibold');
-            const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
-            switchTab(tabId);
-
-            if (isBackgroundPoll) {
-              updateSyncStatus('updated', 'Global Data Updated');
-              setTimeout(() => updateSyncStatus('live', 'Saved Globally'), 1500);
-            } else {
-              updateSyncStatus('live', 'Saved Globally');
-            }
-          } else {
-            hasFetchedInitialCloud = true;
-          }
-        } else {
-          hasFetchedInitialCloud = true;
-          if (!isBackgroundPoll) {
-            updateSyncStatus('live', 'Saved Globally');
-          }
-        }
-      } catch (err) {
-        hasFetchedInitialCloud = true;
-        updateSyncStatus('live', 'Saved');
-      }
+      trackerRef.set(payload).then(() => {
+        updateSyncStatus('live', 'Saved Globally (Live)');
+      }).catch(err => {
+        console.warn("Firebase set error, trying REST API fallback:", err);
+        fetch('/api/db', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        }).then(() => updateSyncStatus('live', 'Saved Globally (Live)'));
+      });
     }
 
     function updateSyncStatus(type, text) {
@@ -1417,18 +1335,10 @@
       a.click();
     }
 
-    document.addEventListener('DOMContentLoaded', async () => {
-      loadInitialLocalData();
+    document.addEventListener('DOMContentLoaded', () => {
       checkAuthSession();
       switchTab('distribute');
       initCursorParticles();
-      
-      // Perform immediate cloud fetch on page load BEFORE enabling background poll
-      await fetchFromCloudStorage(false);
-
-      setInterval(() => {
-        fetchFromCloudStorage(true);
-      }, 2000);
     });
 
     // SUBTLE CURSOR PARTICLE ANIMATION
