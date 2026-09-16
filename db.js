@@ -1,9 +1,25 @@
 // Vercel Serverless API Backend for Attendance Tracker
-// Shared Global Cloud Database API Endpoint
+// Global Shared Server Database API Handler
 
-const KVDB_URL = "https://kvdb.io/salamefx_tracker_9821734918237/attendance";
-
-let globalServerStore = null;
+let globalServerStore = {
+  items: [
+    { id: "item-1", name: "mandi", color: "#a855f7" },
+    { id: "item-2", name: "biriyani", color: "#10b981" }
+  ],
+  students: [
+    { id: "std-1", name: "rasal" },
+    { id: "std-2", name: "rasal 2" }
+  ],
+  distributions: {
+    "std-1_item-1": true,
+    "std-2_item-2": true
+  },
+  teamMembers: [
+    { id: "team-1", name: "SalamEfx", email: "salamabdulsalam8111@gmail.com", role: "Owner Admin", isOwner: true }
+  ],
+  userCredentials: {},
+  lastUpdated: Date.now()
+};
 
 module.exports = async function handler(req, res) {
   // CORS Headers
@@ -19,20 +35,9 @@ module.exports = async function handler(req, res) {
   if (req.method === 'POST') {
     try {
       const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-      if (payload && typeof payload === 'object') {
+      if (payload && typeof payload === 'object' && (Array.isArray(payload.items) || Array.isArray(payload.students) || payload.distributions)) {
         globalServerStore = payload;
-
-        try {
-          await fetch(KVDB_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-        } catch (kvErr) {
-          console.warn('KVDB write warning:', kvErr.message);
-        }
-
-        return res.status(200).json({ success: true, message: 'Saved to Shared Cloud Database', data: globalServerStore });
+        return res.status(200).json({ success: true, message: 'Saved to Global Server Store', data: globalServerStore });
       }
       return res.status(400).json({ error: 'Invalid payload structure' });
     } catch (e) {
@@ -42,23 +47,6 @@ module.exports = async function handler(req, res) {
 
   // 2. GET Request - Load global state
   if (req.method === 'GET') {
-    try {
-      const response = await fetch(KVDB_URL);
-      if (response.ok) {
-        const cloudData = await response.json();
-        if (cloudData && typeof cloudData === 'object' && (Array.isArray(cloudData.items) || Array.isArray(cloudData.students))) {
-          globalServerStore = cloudData;
-          return res.status(200).json(cloudData);
-        }
-      }
-    } catch (e) {
-      console.warn('KVDB GET error:', e.message);
-    }
-
-    if (globalServerStore) {
-      return res.status(200).json(globalServerStore);
-    }
-
-    return res.status(200).json({ items: [], students: [], distributions: {}, lastUpdated: 0 });
+    return res.status(200).json(globalServerStore || { items: [], students: [], distributions: {}, lastUpdated: 0 });
   }
 };
