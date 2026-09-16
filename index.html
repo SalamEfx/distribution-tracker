@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Distribution Tracker</title>
+  <title>Attendance Tracker</title>
 
   <!-- Google Identity Services Library -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -136,7 +136,7 @@
           </svg>
         </div>
         <h2 class="text-2xl font-bold text-[#f3eee3] tracking-wide">Account Verification</h2>
-        <p class="text-xs text-[#a39b8c]">Enter your email and password to access the Distribution Tracker.</p>
+        <p class="text-xs text-[#a39b8c]">Enter your email and password to access the Attendance Tracker.</p>
       </div>
 
       <!-- Auth Mode Selector Tabs -->
@@ -272,7 +272,7 @@
   <!-- NAVIGATION TABS -->
   <nav class="border-b border-[#332e29] px-6 flex gap-8 text-sm font-medium bg-[#161412]/95 backdrop-blur-md relative z-10">
     <button onclick="switchTab('distribute')" id="tab-distribute" class="py-3 text-[#facc15] border-b-2 border-[#facc15] font-semibold transition-colors">
-      Distribute
+      Attendance
     </button>
     <button onclick="switchTab('overview')" id="tab-overview" class="py-3 text-[#a39b8c] hover:text-[#f3eee3] transition-colors">
       Overview
@@ -297,8 +297,8 @@
     <section id="sec-distribute" class="space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 class="text-2xl font-bold text-[#f3eee3]">Distribute</h2>
-          <p class="text-xs text-[#a39b8c] mt-1">Tap a circle the moment someone receives an item.</p>
+          <h2 class="text-2xl font-bold text-[#f3eee3]">Attendance</h2>
+          <p class="text-xs text-[#a39b8c] mt-1">Tap a circle the moment someone marks attendance or receives an item.</p>
         </div>
 
         <div class="flex items-center gap-3">
@@ -330,7 +330,7 @@
     <!-- SECTION 2: OVERVIEW DASHBOARD TAB -->
     <section id="sec-overview" class="space-y-6 hidden">
       <div>
-        <h2 class="text-2xl font-bold text-[#f3eee3]">Distribution Overview</h2>
+        <h2 class="text-2xl font-bold text-[#f3eee3]">Attendance Overview</h2>
         <p class="text-xs text-[#a39b8c] mt-1">Summary statistics and completion rates across all students and items.</p>
       </div>
 
