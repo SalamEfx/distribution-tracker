@@ -83,61 +83,113 @@
 </head>
 <body class="min-h-screen flex flex-col relative">
 
-  <!-- MANDATORY GOOGLE AUTHENTICATION OVERLAY -->
+  <!-- MANDATORY PASSWORD AUTHENTICATION OVERLAY -->
   <div id="authModalOverlay" class="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-[#161512]/95 backdrop-blur-md hidden">
-    <div class="custom-card w-full max-w-md p-8 space-y-6 text-center border border-[#3b352e] shadow-2xl">
-      <!-- Google Auth Header -->
-      <div class="space-y-3">
-        <div class="w-14 h-14 mx-auto rounded-full bg-[#1b1815] border border-[#343029] flex items-center justify-center">
-          <svg class="w-7 h-7" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.1 9 5 12 5z"/>
-            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12.5s.7 2.8 1.9 5.2l3.7-2.9z"/>
-            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.1-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
+    <div class="custom-card w-full max-w-md p-8 space-y-5 border border-[#3b352e] shadow-2xl">
+      
+      <!-- Header with Lock Icon -->
+      <div class="text-center space-y-2">
+        <div class="w-12 h-12 mx-auto rounded-full bg-[#1b1815] border border-[#343029] flex items-center justify-center text-[#86efac]">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
           </svg>
         </div>
-        <h2 class="text-2xl font-bold text-[#f3eee3] tracking-wide">Sign In with Google</h2>
-        <p class="text-xs text-[#a39b8c]">Log in with your Google account to access your distribution dashboard.</p>
+        <h2 class="text-2xl font-bold text-[#f3eee3] tracking-wide">Account Verification</h2>
+        <p class="text-xs text-[#a39b8c]">Enter your email and password to access the Distribution Tracker.</p>
       </div>
 
-      <!-- Google Verification Form -->
-      <form onsubmit="handleGoogleEmailSignIn(event)" class="space-y-4 text-left pt-2">
+      <!-- Auth Mode Selector Tabs -->
+      <div class="flex rounded-xl bg-[#1b1815] p-1 border border-[#343029] text-xs font-semibold">
+        <button id="authTabSignIn" type="button" onclick="toggleAuthTab('signin')" class="flex-1 py-2 rounded-lg bg-[#27231e] text-[#86efac] transition-all">
+          Sign In
+        </button>
+        <button id="authTabSignUp" type="button" onclick="toggleAuthTab('signup')" class="flex-1 py-2 rounded-lg text-[#a39b8c] hover:text-[#f3eee3] transition-all">
+          Create Account
+        </button>
+      </div>
+
+      <!-- FORM 1: SIGN IN MODE -->
+      <form id="formSignIn" onsubmit="handlePasswordSignIn(event)" class="space-y-4 text-left">
         <div>
           <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Google Email Address *</label>
           <input 
             type="email" 
-            id="googleSignInEmail" 
+            id="signInEmail" 
             required 
             placeholder="e.g. yourname@gmail.com" 
             class="w-full p-3 rounded-xl custom-input text-xs font-mono"
           />
         </div>
         <div>
-          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Your Full Name *</label>
+          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Password *</label>
           <input 
-            type="text" 
-            id="googleSignInName" 
+            type="password" 
+            id="signInPassword" 
             required 
-            placeholder="e.g. John Doe" 
+            placeholder="Enter your password" 
             class="w-full p-3 rounded-xl custom-input text-xs"
           />
         </div>
         <button 
           type="submit" 
-          class="w-full py-3.5 rounded-xl bg-[#274026] hover:bg-[#315230] text-[#86efac] font-bold text-xs border border-[#3c633a] transition-all flex items-center justify-center gap-2.5 shadow-lg"
+          class="w-full py-3.5 rounded-xl bg-[#274026] hover:bg-[#315230] text-[#86efac] font-bold text-xs border border-[#3c633a] transition-all flex items-center justify-center gap-2 shadow-lg"
         >
-          <svg class="w-4 h-4" viewBox="0 0 24 24">
-            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.1 9 5 12 5z"/>
-            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 10.8 0 12.5s.7 2.8 1.9 5.2l3.7-2.9z"/>
-            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.1-6.4-5.2L1.9 16C3.7 19.7 7.5 23 12 23z"/>
-          </svg>
-          <span>Continue with Google Account</span>
+          <span>Sign In to Dashboard</span>
         </button>
       </form>
 
-      <div class="text-[10px] text-[#a39b8c] italic border-t border-[#2d2923] pt-4">
-        Owner super-admin status (SalamEfx) is granted automatically when signing in with salamabdulsalam8111@gmail.com.
+      <!-- FORM 2: CREATE ACCOUNT MODE (Hidden by default) -->
+      <form id="formSignUp" onsubmit="handlePasswordSignUp(event)" class="space-y-3 text-left hidden">
+        <div>
+          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Full Display Name *</label>
+          <input 
+            type="text" 
+            id="signUpName" 
+            required 
+            placeholder="e.g. John Doe" 
+            class="w-full p-2.5 rounded-xl custom-input text-xs"
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Google Email Address *</label>
+          <input 
+            type="email" 
+            id="signUpEmail" 
+            required 
+            placeholder="e.g. yourname@gmail.com" 
+            class="w-full p-2.5 rounded-xl custom-input text-xs font-mono"
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Create Password *</label>
+          <input 
+            type="password" 
+            id="signUpPassword" 
+            required 
+            placeholder="Minimum 3 characters" 
+            class="w-full p-2.5 rounded-xl custom-input text-xs"
+          />
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-[#a39b8c] mb-1">Confirm Password *</label>
+          <input 
+            type="password" 
+            id="signUpPasswordConfirm" 
+            required 
+            placeholder="Re-enter password" 
+            class="w-full p-2.5 rounded-xl custom-input text-xs"
+          />
+        </div>
+        <button 
+          type="submit" 
+          class="w-full py-3 rounded-xl bg-[#274026] hover:bg-[#315230] text-[#86efac] font-bold text-xs border border-[#3c633a] transition-all shadow-lg"
+        >
+          <span>Create Account & Sign In</span>
+        </button>
+      </form>
+
+      <div class="text-[10px] text-[#a39b8c] text-center italic border-t border-[#2d2923] pt-3">
+        Owner super-admin status is granted automatically for salamabdulsalam8111@gmail.com.
       </div>
     </div>
   </div>
@@ -466,6 +518,7 @@
     let students = DEFAULT_STUDENTS;
     let distributions = DEFAULT_DISTRIBUTIONS;
     let teamMembers = DEFAULT_TEAM;
+    let userCredentials = {};
     let currentUser = null;
 
     function loadInitialLocalData() {
@@ -474,11 +527,13 @@
         const savedStudents = localStorage.getItem('dt_students');
         const savedDistributions = localStorage.getItem('dt_distributions');
         const savedTeam = localStorage.getItem('dt_team');
+        const savedCreds = localStorage.getItem('dt_user_creds');
 
         if (savedItems) items = JSON.parse(savedItems);
         if (savedStudents) students = JSON.parse(savedStudents);
         if (savedDistributions) distributions = JSON.parse(savedDistributions);
         if (savedTeam) teamMembers = JSON.parse(savedTeam);
+        if (savedCreds) userCredentials = JSON.parse(savedCreds);
       } catch (e) {
         console.error("Local data load error:", e);
       }
@@ -488,41 +543,87 @@
     // Migrate owner name
     teamMembers = teamMembers.map(m => (m.isOwner || m.email.toLowerCase() === OWNER_EMAIL.toLowerCase()) ? { ...m, name: OWNER_NAME } : m);
 
-    // GOOGLE IDENTITY & AUTHENTICATION MODULE
-    function parseJwt(token) {
-      try {
-        const base64Url = token.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
-      } catch (e) {
-        return null;
+    // AUTHENTICATION MODULE & PASSWORD VALIDATION
+    function toggleAuthTab(mode) {
+      const btnSignIn = document.getElementById('authTabSignIn');
+      const btnSignUp = document.getElementById('authTabSignUp');
+      const formSignIn = document.getElementById('formSignIn');
+      const formSignUp = document.getElementById('formSignUp');
+
+      if (mode === 'signin') {
+        btnSignIn.className = 'flex-1 py-2 rounded-lg bg-[#27231e] text-[#86efac] transition-all';
+        btnSignUp.className = 'flex-1 py-2 rounded-lg text-[#a39b8c] hover:text-[#f3eee3] transition-all';
+        formSignIn.classList.remove('hidden');
+        formSignUp.classList.add('hidden');
+      } else {
+        btnSignUp.className = 'flex-1 py-2 rounded-lg bg-[#27231e] text-[#86efac] transition-all';
+        btnSignIn.className = 'flex-1 py-2 rounded-lg text-[#a39b8c] hover:text-[#f3eee3] transition-all';
+        formSignUp.classList.remove('hidden');
+        formSignIn.classList.add('hidden');
       }
     }
 
-    function handleGoogleCredential(response) {
-      if (!response || !response.credential) return;
-      const payload = parseJwt(response.credential);
-      if (payload && payload.email) {
-        loginUser({
-          name: payload.name || payload.email.split('@')[0],
-          email: payload.email,
-          picture: payload.picture || null,
-          sub: payload.sub
-        });
-      }
-    }
-
-    function handleGoogleEmailSignIn(e) {
+    function handlePasswordSignIn(e) {
       e.preventDefault();
-      const email = document.getElementById('googleSignInEmail').value.trim().toLowerCase();
-      const name = document.getElementById('googleSignInName').value.trim();
-      if (!email || !name) return;
+      const email = document.getElementById('signInEmail').value.trim().toLowerCase();
+      const password = document.getElementById('signInPassword').value;
+
+      if (!email || !password) return;
+
+      const user = userCredentials[email];
+      if (!user) {
+        showToast('No account found for this email. Switch to Create Account.');
+        toggleAuthTab('signup');
+        document.getElementById('signUpEmail').value = email;
+        return;
+      }
+
+      if (user.password !== password) {
+        showToast('Incorrect password! Please try again.');
+        return;
+      }
 
       loginUser({
-        name: email === OWNER_EMAIL.toLowerCase() ? OWNER_NAME : name,
+        name: user.name,
+        email: email,
+        picture: null
+      });
+    }
+
+    function handlePasswordSignUp(e) {
+      e.preventDefault();
+      const name = document.getElementById('signUpName').value.trim();
+      const email = document.getElementById('signUpEmail').value.trim().toLowerCase();
+      const pass = document.getElementById('signUpPassword').value;
+      const passConfirm = document.getElementById('signUpPasswordConfirm').value;
+
+      if (!name || !email || !pass) return;
+
+      if (pass.length < 3) {
+        showToast('Password must be at least 3 characters.');
+        return;
+      }
+
+      if (pass !== passConfirm) {
+        showToast('Passwords do not match. Please re-enter.');
+        return;
+      }
+
+      const isOwner = email === OWNER_EMAIL.toLowerCase();
+      const displayName = isOwner ? OWNER_NAME : name;
+
+      userCredentials[email] = {
+        name: displayName,
+        password: pass,
+        role: isOwner ? 'Owner Admin' : 'Coordinator',
+        isOwner: isOwner
+      };
+
+      localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
+      saveData();
+
+      loginUser({
+        name: displayName,
         email: email,
         picture: null
       });
@@ -548,7 +649,7 @@
 
       document.getElementById('authModalOverlay').classList.add('hidden');
       renderUserProfileHeader();
-      showToast(`Welcome, ${currentUser.name}!`);
+      showToast(`Welcome back, ${currentUser.name}!`);
       
       const activeBtn = document.querySelector('nav button.font-semibold');
       const tabId = activeBtn ? activeBtn.id.replace('tab-', '') : 'distribute';
@@ -570,7 +671,7 @@
       if (!currentUser) {
         container.innerHTML = `
           <button onclick="document.getElementById('authModalOverlay').classList.remove('hidden')" class="px-3.5 py-1.5 rounded-xl bg-[#274026] hover:bg-[#315230] border border-[#3c633a] text-[#86efac] font-semibold text-xs shadow-md transition-colors">
-            Sign in with Google
+            Sign In
           </button>
         `;
         return;
@@ -621,11 +722,11 @@
 
     const CLOUD_ENDPOINTS = [
       {
-        url: "https://getpantry.cloud/apiv1/pantry/a89f949c-3d2b-4e6a-9f1c-8b7a6c5d4e3f/basket/salamefx_distribution",
+        url: "/api/db",
         method: "POST"
       },
       {
-        url: "/api/db",
+        url: "https://getpantry.cloud/apiv1/pantry/a89f949c-3d2b-4e6a-9f1c-8b7a6c5d4e3f/basket/salamefx_distribution",
         method: "POST"
       }
     ];
@@ -638,6 +739,7 @@
       localStorage.setItem('dt_students', JSON.stringify(students));
       localStorage.setItem('dt_distributions', JSON.stringify(distributions));
       localStorage.setItem('dt_team', JSON.stringify(teamMembers));
+      localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
 
       clearTimeout(syncTimeout);
       syncTimeout = setTimeout(pushToCloudStorage, 150);
@@ -653,6 +755,7 @@
         students,
         distributions,
         teamMembers,
+        userCredentials,
         lastUpdated: timestamp
       };
 
@@ -709,6 +812,10 @@
             students = data.students;
             distributions = data.distributions;
             if (data.teamMembers) teamMembers = data.teamMembers;
+            if (data.userCredentials) {
+              userCredentials = { ...userCredentials, ...data.userCredentials };
+              localStorage.setItem('dt_user_creds', JSON.stringify(userCredentials));
+            }
 
             localStorage.setItem('dt_items', JSON.stringify(items));
             localStorage.setItem('dt_students', JSON.stringify(students));
